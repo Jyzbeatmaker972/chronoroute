@@ -475,6 +475,74 @@ input::placeholder { color: var(--muted); }
 .toast.info  { background:var(--blue); }
 
 /* ═══════════════════════════════════════════
+   MODALE ÉDITION
+═══════════════════════════════════════════ */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 900;
+  background: rgba(15,27,45,.5);
+  backdrop-filter: blur(6px);
+  display: flex; align-items: flex-end; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity .25s cubic-bezier(.4,0,.2,1);
+}
+.modal-overlay.open {
+  opacity: 1; pointer-events: all;
+}
+.modal-sheet {
+  background: var(--surface);
+  border-radius: 20px 20px 0 0;
+  width: 100%; max-width: 520px;
+  padding: 0 0 calc(16px + var(--safe-bot));
+  box-shadow: 0 -8px 40px rgba(26,86,219,.18);
+  transform: translateY(40px);
+  transition: transform .28s cubic-bezier(.4,0,.2,1);
+}
+.modal-overlay.open .modal-sheet {
+  transform: translateY(0);
+}
+.modal-handle {
+  width: 36px; height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 12px auto 0;
+}
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.modal-title {
+  font-size: 15px; font-weight: 700; color: var(--text);
+}
+.modal-close {
+  background: var(--bg); border: none;
+  width: 30px; height: 30px; border-radius: 50%;
+  font-size: 16px; cursor: pointer; color: var(--muted);
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+}
+.modal-close:active { background: var(--border); }
+.modal-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
+.modal-footer { padding: 0 18px; display: flex; gap: 9px; }
+.btn-save {
+  flex: 1; background: var(--blue); color: #fff;
+  padding: 13px; border-radius: 11px;
+  font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 700;
+  border: none; cursor: pointer;
+  box-shadow: 0 3px 12px rgba(26,86,219,.3);
+  transition: all .18s;
+}
+.btn-save:active { opacity: .85; transform: scale(.97); }
+.btn-cancel {
+  background: var(--bg); color: var(--muted);
+  padding: 13px 18px; border-radius: 11px;
+  font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600;
+  border: 1.5px solid var(--border); cursor: pointer;
+  transition: all .18s;
+}
+.btn-cancel:active { opacity: .8; }
+
+/* ═══════════════════════════════════════════
    LEAFLET POPUP
 ═══════════════════════════════════════════ */
 .leaflet-popup-content-wrapper { border-radius:14px!important; box-shadow:var(--sh-lg)!important; border:1.5px solid var(--border)!important; font-family:'DM Sans',sans-serif!important; padding:0!important; }
@@ -757,6 +825,52 @@ input::placeholder { color: var(--muted); }
   </div>
 </div>
 
+<!-- ══════════ MODALE ÉDITION ══════════ -->
+<div class="modal-overlay" id="editModal" onclick="closeEditModal(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title">✏️ Modifier l'arrêt</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="fg">
+        <label>Destinataire</label>
+        <input id="editName" type="text" placeholder="M. Dupont" autocomplete="off" autocorrect="off" spellcheck="false"/>
+      </div>
+      <div class="fg">
+        <label>Adresse complète</label>
+        <input id="editAddr" type="text" placeholder="12 rue de la Paix, Paris" autocomplete="off" autocorrect="off" spellcheck="false"/>
+      </div>
+      <div class="fg2">
+        <div>
+          <label>Créneau</label>
+          <select id="editSlot">
+            <option value="">Libre</option>
+            <option value="avant 10h">Avant 10h</option>
+            <option value="avant 12h">Avant 12h</option>
+            <option value="avant 13h">Avant 13h</option>
+            <option value="10h-14h">10h–14h</option>
+            <option value="14h-18h">14h–18h</option>
+          </select>
+        </div>
+        <div>
+          <label>Type</label>
+          <select id="editType">
+            <option value="standard">Standard</option>
+            <option value="express">Express 10h</option>
+            <option value="fragile">Fragile</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+      <button class="btn-save" onclick="saveEdit()">✅ Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 <!-- LOADING -->
 <div class="loading hidden" id="loading">
   <div class="spinner"></div>
@@ -1021,6 +1135,7 @@ function stopCardHTML(s, i) {
     <div class="sc-row1">
       <div class="sc-num">${i + 1}</div>
       <div class="sc-name">${s.name}</div>
+      <button class="sc-del" onclick="openEdit(${s.id})" style="color:var(--blue);font-size:16px;" title="Modifier">✏️</button>
       <button class="sc-del" onclick="removeStop(${s.id})">✕</button>
     </div>
     <div class="sc-addr">📍 ${s.addr}</div>
@@ -1111,6 +1226,69 @@ function renderDesktopRoute() {
 // ══════════════════════════════════════
 //  STATUS / REMOVE
 // ══════════════════════════════════════
+// ══════════════════════════════════════
+//  MODALE ÉDITION
+// ══════════════════════════════════════
+let editingId = null;
+
+function openEdit(id) {
+  const s = stops.find(s => s.id === id);
+  if (!s) return;
+  editingId = id;
+  document.getElementById('editName').value = s.name;
+  document.getElementById('editAddr').value = s.addr;
+  document.getElementById('editSlot').value = s.slot || '';
+  document.getElementById('editType').value = s.type || 'standard';
+  document.getElementById('editModal').classList.add('open');
+  // Focus sur le premier champ après animation
+  setTimeout(() => document.getElementById('editName').focus(), 300);
+}
+
+function closeModal() {
+  document.getElementById('editModal').classList.remove('open');
+  editingId = null;
+}
+
+function closeEditModal(e) {
+  // Fermer si clic sur l'overlay (pas sur la sheet)
+  if (e.target === document.getElementById('editModal')) closeModal();
+}
+
+function saveEdit() {
+  if (!editingId) return;
+  const s = stops.find(s => s.id === editingId);
+  if (!s) return;
+
+  const newName = document.getElementById('editName').value.trim();
+  const newAddr = document.getElementById('editAddr').value.trim();
+  const newSlot = document.getElementById('editSlot').value;
+  const newType = document.getElementById('editType').value;
+
+  if (!newName || !newAddr) { showToast('⚠️ Nom et adresse requis', 'err'); return; }
+
+  const addrChanged = newAddr !== s.addr;
+
+  s.name = newName;
+  s.addr = newAddr;
+  s.slot = newSlot;
+  s.type = newType;
+
+  // Si l'adresse a changé, réinitialiser les coords pour forcer un nouveau géocodage
+  if (addrChanged) {
+    s.coords = null;
+    s.distFromPrev = undefined;
+    s.timeFromPrev = undefined;
+    showToast(`✏️ Modifié — relancez l'optimisation`, 'info');
+  } else {
+    showToast(`✅ ${s.name} mis à jour`, 'ok');
+  }
+
+  closeModal();
+  renderAll();
+  refreshMarkers();
+  updateHeader();
+}
+
 function setStatus(id, st) {
   const s = stops.find(s => s.id === id); if (!s) return;
   s.status = s.status === st ? null : st;
