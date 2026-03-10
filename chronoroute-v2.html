@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChronoRoute v2 — Tournée Intelligente</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root {
+    --yellow: #FFD100;
+    --yellow-dark: #E6B800;
+    --black: #0A0A0A;
+    --dark: #111111;
+    --gray: #1C1C1C;
+    --gray-mid: #2A2A2A;
+    --gray-light: #3A3A3A;
+    --text: #F0F0F0;
+    --text-muted: #888;
+    --success: #00D68F;
+    --danger: #FF4757;
+    --warning: #FFA502;
+    --blue: #1E90FF;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Barlow',sans-serif; background:var(--black); color:var(--text); height:100vh; overflow:hidden; display:flex; flex-direction:column; }
+
+  /* HEADER */
+  header {
+    background:var(--yellow); padding:0 20px; height:52px;
+    display:flex; align-items:center; justify-content:space-between;
+    flex-shrink:0; box-shadow:0 2px 16px rgba(255,209,0,0.25); z-index:200;
+  }
+  .logo { font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:22px; color:var(--black); display:flex; align-items:center; gap:8px; }
+  .logo span { font-weight:400; font-size:12px; letter-spacing:2px; text-transform:uppercase; color:#555; }
+  .header-pills { display:flex; gap:10px; }
+  .pill { background:rgba(0,0,0,0.12); border-radius:20px; padding:3px 12px; font-size:12px; font-weight:700; color:var(--black); }
+
+  /* LAYOUT */
+  .app { display:grid; grid-template-columns:360px 1fr; flex:1; overflow:hidden; }
+
+  /* SIDEBAR */
+  .sidebar { background:var(--dark); border-right:1px solid var(--gray); display:flex; flex-direction:column; overflow:hidden; }
+  .sb-top { padding:14px 16px; border-bottom:1px solid var(--gray); flex-shrink:0; }
+  .sb-title { font-family:'Barlow Condensed',sans-serif; font-size:17px; font-weight:700; color:var(--yellow); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; }
+
+  label { display:block; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:4px; }
+  input, select {
+    width:100%; background:var(--gray); border:1px solid var(--gray-light);
+    border-radius:6px; padding:8px 10px; font-family:'Barlow',sans-serif;
+    font-size:13px; color:var(--text); outline:none; transition:border-color 0.2s;
+  }
+  input:focus, select:focus { border-color:var(--yellow); }
+  input::placeholder { color:var(--text-muted); }
+  select option { background:var(--gray); }
+  .fg { margin-bottom:8px; }
+  .fg2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px; }
+
+  .btn { padding:9px 14px; border-radius:6px; font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; letter-spacing:1px; text-transform:uppercase; border:none; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center; gap:6px; }
+  .btn-primary { background:var(--yellow); color:var(--black); width:100%; }
+  .btn-primary:hover { background:var(--yellow-dark); }
+  .btn-optimize { background:var(--black); color:var(--yellow); border:2px solid var(--yellow); width:100%; font-size:15px; padding:11px; }
+  .btn-optimize:hover { background:var(--yellow); color:var(--black); }
+  .btn-optimize:disabled { opacity:0.4; cursor:not-allowed; }
+  .btn-pdf { background:var(--gray); color:var(--text); border:1px solid var(--gray-light); width:100%; }
+  .btn-pdf:hover { border-color:var(--blue); color:var(--blue); }
+  .btn-reset { background:transparent; border:1px solid var(--gray-light); color:var(--text-muted); font-size:12px; padding:6px 10px; }
+  .btn-reset:hover { border-color:var(--danger); color:var(--danger); }
+
+  /* STOPS LIST */
+  .sb-list { flex:1; overflow-y:auto; padding:10px 12px; }
+  .sb-list::-webkit-scrollbar { width:3px; }
+  .sb-list::-webkit-scrollbar-thumb { background:var(--gray-light); border-radius:2px; }
+  .no-stops { text-align:center; padding:30px 0; color:var(--text-muted); font-size:13px; }
+
+  .stop-card {
+    background:var(--gray); border:1px solid var(--gray-light); border-radius:8px;
+    padding:10px 12px; margin-bottom:7px; animation:slideIn 0.25s ease;
+    transition:border-color 0.2s;
+  }
+  @keyframes slideIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+  .stop-card:hover { border-color:var(--gray-light); }
+  .stop-card.s-livre { border-left:3px solid var(--success); }
+  .stop-card.s-absent { border-left:3px solid var(--warning); }
+  .stop-card.s-echec { border-left:3px solid var(--danger); }
+
+  .sc-head { display:flex; align-items:flex-start; gap:8px; margin-bottom:6px; }
+  .sc-num { background:var(--yellow); color:var(--black); font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:14px; width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .sc-info { flex:1; min-width:0; }
+  .sc-name { font-weight:600; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .sc-addr { font-size:11px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
+  .sc-del { background:transparent; border:none; color:var(--text-muted); cursor:pointer; font-size:14px; padding:2px 4px; transition:color 0.15s; }
+  .sc-del:hover { color:var(--danger); }
+  .sc-meta { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:7px; }
+  .badge { padding:2px 7px; border-radius:10px; font-size:10px; font-weight:700; letter-spacing:0.3px; }
+  .b-express { background:rgba(255,71,87,0.2); color:var(--danger); }
+  .b-fragile { background:rgba(180,100,255,0.2); color:#c07fff; }
+  .b-standard { background:rgba(136,136,136,0.12); color:var(--text-muted); }
+  .b-time { background:rgba(30,144,255,0.15); color:var(--blue); }
+  .b-livre { background:rgba(0,214,143,0.2); color:var(--success); }
+  .b-absent { background:rgba(255,165,2,0.2); color:var(--warning); }
+  .b-echec { background:rgba(255,71,87,0.2); color:var(--danger); }
+
+  .sc-btns { display:flex; gap:5px; }
+  .sb-btn { flex:1; padding:4px 6px; border-radius:5px; font-family:'Barlow Condensed',sans-serif; font-size:11px; font-weight:700; letter-spacing:0.3px; border:1px solid transparent; cursor:pointer; transition:all 0.15s; text-align:center; }
+  .sb-btn.livre { background:rgba(0,214,143,0.12); color:var(--success); border-color:rgba(0,214,143,0.25); }
+  .sb-btn.absent { background:rgba(255,165,2,0.12); color:var(--warning); border-color:rgba(255,165,2,0.25); }
+  .sb-btn.echec { background:rgba(255,71,87,0.12); color:var(--danger); border-color:rgba(255,71,87,0.25); }
+  .sb-btn.active { filter:brightness(1.4); }
+  .sb-btn:hover { opacity:0.8; }
+
+  /* SIDEBAR FOOTER */
+  .sb-footer { padding:12px 14px; border-top:1px solid var(--gray); display:flex; flex-direction:column; gap:7px; flex-shrink:0; }
+
+  /* MAIN */
+  .main { display:flex; flex-direction:column; overflow:hidden; }
+
+  /* TABS */
+  .tabs { display:flex; background:var(--dark); border-bottom:1px solid var(--gray); flex-shrink:0; }
+  .tab { padding:10px 20px; font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; letter-spacing:1px; text-transform:uppercase; cursor:pointer; color:var(--text-muted); border-bottom:2px solid transparent; transition:all 0.2s; }
+  .tab.active { color:var(--yellow); border-bottom-color:var(--yellow); }
+  .tab:hover { color:var(--text); }
+
+  /* MAP */
+  #map { flex:1; min-height:0; }
+  .map-wrap { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+  .map-wrap.hidden { display:none; }
+
+  /* ROUTE PANEL */
+  .route-panel { flex:1; overflow-y:auto; padding:16px 20px; }
+  .route-panel.hidden { display:none; }
+  .route-panel::-webkit-scrollbar { width:4px; }
+  .route-panel::-webkit-scrollbar-thumb { background:var(--gray-light); border-radius:2px; }
+
+  .summary-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; background:var(--gray); border:1px solid var(--gray-light); border-radius:10px; padding:14px 16px; margin-bottom:16px; }
+  .sum-item { text-align:center; }
+  .sum-val { font-family:'Barlow Condensed',sans-serif; font-size:28px; font-weight:900; color:var(--yellow); line-height:1; }
+  .sum-lbl { font-size:10px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px; margin-top:3px; }
+
+  .route-steps { display:flex; flex-direction:column; }
+  .rs { display:flex; align-items:flex-start; gap:12px; padding-bottom:14px; position:relative; animation:fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity:0; transform:translateX(8px); } to { opacity:1; transform:translateX(0); } }
+  .rs:not(:last-child)::before { content:''; position:absolute; left:17px; top:35px; width:2px; height:calc(100% - 18px); background:linear-gradient(180deg,var(--yellow),var(--gray-light)); }
+  .rs-num { width:34px; height:34px; border-radius:50%; background:var(--yellow); color:var(--black); font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:16px; display:flex; align-items:center; justify-content:center; flex-shrink:0; z-index:1; transition:background 0.3s; }
+  .rs-num.done { background:var(--success); color:white; }
+  .rs-num.warn { background:var(--warning); color:white; }
+  .rs-num.fail { background:var(--danger); color:white; }
+  .rs-body { flex:1; background:var(--gray); border:1px solid var(--gray-light); border-radius:8px; padding:10px 12px; }
+  .rs-name { font-weight:600; font-size:13px; margin-bottom:2px; }
+  .rs-addr { font-size:11px; color:var(--text-muted); margin-bottom:6px; }
+  .rs-foot { display:flex; gap:7px; align-items:center; flex-wrap:wrap; }
+  .rs-dist { font-size:11px; color:var(--blue); font-weight:500; }
+
+  /* LOADING */
+  .loading-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.75); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:1000; backdrop-filter:blur(4px); }
+  .loading-overlay.hidden { display:none; }
+  .spinner { width:44px; height:44px; border:3px solid var(--gray-light); border-top-color:var(--yellow); border-radius:50%; animation:spin 0.8s linear infinite; margin-bottom:16px; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .loading-text { font-family:'Barlow Condensed',sans-serif; font-size:18px; font-weight:700; color:var(--yellow); letter-spacing:2px; text-transform:uppercase; }
+  .loading-sub { font-size:12px; color:var(--text-muted); margin-top:6px; }
+
+  /* NOTIF */
+  .notif { position:fixed; bottom:16px; right:16px; background:var(--yellow); color:var(--black); padding:10px 18px; border-radius:8px; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:15px; z-index:999; transform:translateY(60px); opacity:0; transition:all 0.3s; }
+  .notif.show { transform:translateY(0); opacity:1; }
+  .notif.error { background:var(--danger); color:white; }
+
+  /* PROGRESS */
+  .prog-wrap { height:3px; background:var(--gray); flex-shrink:0; }
+  .prog-fill { height:100%; background:linear-gradient(90deg,var(--yellow),var(--success)); transition:width 0.5s; }
+
+  .empty-route { text-align:center; padding:60px 20px; color:var(--text-muted); }
+  .empty-route .ico { font-size:48px; margin-bottom:12px; }
+  .empty-route .txt { font-family:'Barlow Condensed',sans-serif; font-size:18px; text-transform:uppercase; letter-spacing:2px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">⚡ ChronoRoute <span>v2 — GPS Réel</span></div>
+  <div class="header-pills">
+    <div class="pill" id="hTotal">📦 0 colis</div>
+    <div class="pill" id="hDone">✅ 0 livrés</div>
+    <div class="pill" id="hDist">📏 —</div>
+  </div>
+</header>
+
+<div class="prog-wrap"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sb-top">
+      <div class="sb-title">➕ Nouvel arrêt</div>
+      <div class="fg">
+        <label>Nom / Destinataire</label>
+        <input id="inName" type="text" placeholder="Ex: M. Dupont" />
+      </div>
+      <div class="fg">
+        <label>Adresse complète</label>
+        <input id="inAddr" type="text" placeholder="12 rue de la Paix, Paris" />
+      </div>
+      <div class="fg2">
+        <div>
+          <label>Créneau</label>
+          <select id="inSlot">
+            <option value="">Libre</option>
+            <option value="avant 10h">Avant 10h</option>
+            <option value="avant 12h">Avant 12h</option>
+            <option value="avant 13h">Avant 13h</option>
+            <option value="10h-14h">10h–14h</option>
+            <option value="14h-18h">14h–18h</option>
+          </select>
+        </div>
+        <div>
+          <label>Type</label>
+          <select id="inType">
+            <option value="standard">Standard</option>
+            <option value="express">Express 10h</option>
+            <option value="fragile">Fragile</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="addStop()">📦 Ajouter</button>
+    </div>
+
+    <div class="sb-list" id="sbList">
+      <div class="no-stops">Aucun arrêt pour l'instant</div>
+    </div>
+
+    <div class="sb-footer">
+      <button class="btn btn-optimize" id="btnOpt" onclick="optimizeRoute()">⚡ OPTIMISER (GPS RÉEL)</button>
+      <button class="btn btn-pdf" onclick="exportPDF()">📄 EXPORTER PDF</button>
+      <button class="btn btn-reset" onclick="resetAll()">🗑️ Réinitialiser</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="tabs">
+      <div class="tab active" id="tabMap" onclick="switchTab('map')">🗺️ Carte</div>
+      <div class="tab" id="tabRoute" onclick="switchTab('route')">📋 Tournée</div>
+    </div>
+
+    <div class="map-wrap" id="mapWrap">
+      <div id="map"></div>
+    </div>
+
+    <div class="route-panel hidden" id="routePanel">
+      <div class="empty-route" id="emptyRoute">
+        <div class="ico">🚐</div>
+        <div class="txt">Ajoutez des arrêts<br>et optimisez la tournée</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="loading-overlay hidden" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loadingText">Géocodage en cours</div>
+  <div class="loading-sub" id="loadingSub">Calcul des distances réelles...</div>
+</div>
+
+<div class="notif" id="notif"></div>
+
+<script>
+// ===================== STATE =====================
+let stops = [];
+let map = null;
+let markers = [];
+let routeLine = null;
+let totalDistKm = 0;
+let totalTimeMin = 0;
+
+// ===================== MAP INIT =====================
+function initMap() {
+  map = L.map('map', { zoomControl: true }).setView([48.8566, 2.3522], 12);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap © CARTO',
+    maxZoom: 19
+  }).addTo(map);
+}
+
+// ===================== GEOCODING (Nominatim) =====================
+async function geocode(address) {
+  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`;
+  const r = await fetch(url, { headers: { 'Accept-Language': 'fr' } });
+  const data = await r.json();
+  if (!data.length) return null;
+  return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon), display: data[0].display_name };
+}
+
+// ===================== OSRM DISTANCE MATRIX =====================
+async function getDistanceMatrix(coords) {
+  const coordStr = coords.map(c => `${c.lon},${c.lat}`).join(';');
+  const url = `https://router.project-osrm.org/table/v1/driving/${coordStr}?annotations=duration,distance`;
+  const r = await fetch(url);
+  const data = await r.json();
+  return data;
+}
+
+// ===================== OSRM ROUTE (ordered) =====================
+async function getRoute(coords) {
+  const coordStr = coords.map(c => `${c.lon},${c.lat}`).join(';');
+  const url = `https://router.project-osrm.org/route/v1/driving/${coordStr}?overview=full&geometries=geojson`;
+  const r = await fetch(url);
+  const data = await r.json();
+  return data;
+}
+
+// ===================== TSP (Nearest Neighbor) =====================
+function tspNearestNeighbor(matrix, n) {
+  const visited = new Array(n).fill(false);
+  const tour = [0];
+  visited[0] = true;
+  for (let i = 1; i < n; i++) {
+    const last = tour[tour.length - 1];
+    let best = -1, bestDist = Infinity;
+    for (let j = 0; j < n; j++) {
+      if (!visited[j] && matrix[last][j] < bestDist) {
+        bestDist = matrix[last][j];
+        best = j;
+      }
+    }
+    visited[best] = true;
+    tour.push(best);
+  }
+  return tour;
+}
+
+// ===================== ADD STOP =====================
+async function addStop() {
+  const name = document.getElementById('inName').value.trim();
+  const addr = document.getElementById('inAddr').value.trim();
+  const slot = document.getElementById('inSlot').value;
+  const type = document.getElementById('inType').value;
+  if (!name || !addr) { showNotif('⚠️ Nom et adresse requis', true); return; }
+
+  stops.push({ id: Date.now(), name, addr, slot, type, status: null, coords: null, order: stops.length + 1 });
+  document.getElementById('inName').value = '';
+  document.getElementById('inAddr').value = '';
+  document.getElementById('inSlot').value = '';
+  document.getElementById('inType').value = 'standard';
+  renderSidebar();
+  updateHeader();
+  showNotif(`📦 ${name} ajouté(e)`);
+}
+
+// ===================== OPTIMIZE =====================
+async function optimizeRoute() {
+  if (stops.length < 2) { showNotif('⚠️ Minimum 2 arrêts requis', true); return; }
+
+  // Priority sort first (Express + créneau tôt en priorité)
+  const priority = { express:0, fragile:1, standard:2 };
+  const slotOrder = { 'avant 10h':0,'avant 12h':1,'avant 13h':2,'10h-14h':3,'14h-18h':4,'':5 };
+  stops.sort((a,b) => {
+    const pa = priority[a.type]??2, pb = priority[b.type]??2;
+    if (pa!==pb) return pa-pb;
+    return (slotOrder[a.slot]??5)-(slotOrder[b.slot]??5);
+  });
+
+  showLoading('Géocodage des adresses', `0 / ${stops.length} adresses`);
+  document.getElementById('btnOpt').disabled = true;
+
+  try {
+    // 1. GEOCODE all
+    for (let i = 0; i < stops.length; i++) {
+      updateLoadingSub(`Géocodage ${i+1} / ${stops.length} : ${stops[i].name}`);
+      if (!stops[i].coords) {
+        const geo = await geocode(stops[i].addr);
+        if (!geo) { showNotif(`❌ Adresse introuvable : ${stops[i].addr}`, true); hideLoading(); document.getElementById('btnOpt').disabled=false; return; }
+        stops[i].coords = geo;
+      }
+      await sleep(300); // respect Nominatim rate limit
+    }
+
+    // 2. DISTANCE MATRIX via OSRM
+    updateLoadingText('Calcul des distances GPS');
+    updateLoadingSub('Interrogation OSRM...');
+    const matrix = await getDistanceMatrix(stops.map(s=>s.coords));
+    const durations = matrix.durations; // seconds
+
+    // 3. TSP Nearest Neighbor
+    updateLoadingText('Optimisation du trajet');
+    updateLoadingSub('Algorithme TSP en cours...');
+    const tour = tspNearestNeighbor(durations, stops.length);
+    stops = tour.map((idx, i) => ({ ...stops[idx], order: i+1 }));
+
+    // 4. Get actual route geometry
+    updateLoadingText('Calcul du tracé GPS');
+    updateLoadingSub('Récupération de l\'itinéraire...');
+    const routeData = await getRoute(stops.map(s=>s.coords));
+
+    // 5. Compute total distance & time
+    totalDistKm = (routeData.routes[0].distance / 1000).toFixed(1);
+    totalTimeMin = Math.round(routeData.routes[0].duration / 60);
+
+    // Compute leg distances
+    const legs = routeData.routes[0].legs;
+    stops.forEach((s, i) => {
+      s.distFromPrev = i === 0 ? 0 : (legs[i-1].distance / 1000).toFixed(2);
+      s.timeFromPrev = i === 0 ? 0 : Math.round(legs[i-1].duration / 60);
+    });
+
+    // 6. Draw on map
+    drawMap(routeData.routes[0].geometry.coordinates);
+
+    hideLoading();
+    renderSidebar();
+    renderRoute();
+    updateHeader();
+    showNotif(`⚡ Tournée optimisée — ${totalDistKm} km`);
+
+  } catch(e) {
+    console.error(e);
+    hideLoading();
+    showNotif('❌ Erreur réseau — vérifiez votre connexion', true);
+  }
+
+  document.getElementById('btnOpt').disabled = false;
+}
+
+// ===================== MAP DRAW =====================
+function drawMap(geoCoords) {
+  // Clear old markers and line
+  markers.forEach(m => m.remove());
+  markers = [];
+  if (routeLine) { routeLine.remove(); routeLine = null; }
+
+  // Draw route line
+  const latlngs = geoCoords.map(c => [c[1], c[0]]);
+  routeLine = L.polyline(latlngs, { color: '#FFD100', weight: 4, opacity: 0.85 }).addTo(map);
+
+  // Draw markers
+  stops.forEach((s, i) => {
+    const color = s.status === 'livre' ? '#00D68F' : s.status === 'absent' ? '#FFA502' : s.status === 'echec' ? '#FF4757' : '#FFD100';
+    const icon = L.divIcon({
+      className: '',
+      html: `<div style="width:30px;height:30px;border-radius:50%;background:${color};color:#000;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:14px;display:flex;align-items:center;justify-content:center;border:2px solid rgba(0,0,0,0.3);box-shadow:0 2px 8px rgba(0,0,0,0.5);">${i+1}</div>`,
+      iconSize: [30,30], iconAnchor: [15,15]
+    });
+    const m = L.marker([s.coords.lat, s.coords.lon], { icon })
+      .addTo(map)
+      .bindPopup(`<b>${s.name}</b><br>${s.addr}${s.slot?'<br>🕐 '+s.slot:''}`);
+    markers.push(m);
+  });
+
+  map.fitBounds(routeLine.getBounds(), { padding: [30,30] });
+}
+
+function refreshMarkers() {
+  if (!stops.some(s => s.coords)) return;
+  markers.forEach(m => m.remove());
+  markers = [];
+  stops.forEach((s, i) => {
+    if (!s.coords) return;
+    const color = s.status === 'livre' ? '#00D68F' : s.status === 'absent' ? '#FFA502' : s.status === 'echec' ? '#FF4757' : '#FFD100';
+    const icon = L.divIcon({
+      className: '',
+      html: `<div style="width:30px;height:30px;border-radius:50%;background:${color};color:#000;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:14px;display:flex;align-items:center;justify-content:center;border:2px solid rgba(0,0,0,0.3);box-shadow:0 2px 8px rgba(0,0,0,0.5);">${i+1}</div>`,
+      iconSize: [30,30], iconAnchor: [15,15]
+    });
+    const m = L.marker([s.coords.lat, s.coords.lon], { icon })
+      .addTo(map)
+      .bindPopup(`<b>${s.name}</b><br>${s.addr}`);
+    markers.push(m);
+  });
+}
+
+// ===================== RENDER SIDEBAR =====================
+function renderSidebar() {
+  const el = document.getElementById('sbList');
+  if (!stops.length) { el.innerHTML = '<div class="no-stops">Aucun arrêt ajouté</div>'; return; }
+
+  let html = '';
+  stops.forEach((s, i) => {
+    const sc = s.status ? `s-${s.status}` : '';
+    const tb = s.type==='express' ? '<span class="badge b-express">EXPRESS</span>' : s.type==='fragile' ? '<span class="badge b-fragile">FRAGILE</span>' : '<span class="badge b-standard">STD</span>';
+    const slb = s.slot ? `<span class="badge b-time">🕐 ${s.slot}</span>` : '';
+    const stb = s.status ? `<span class="badge b-${s.status}">${s.status==='livre'?'✅ Livré':s.status==='absent'?'⚠️ Absent':'❌ Échec'}</span>` : '';
+    html += `<div class="stop-card ${sc}">
+      <div class="sc-head">
+        <div class="sc-num">${i+1}</div>
+        <div class="sc-info"><div class="sc-name">${s.name}</div><div class="sc-addr">${s.addr}</div></div>
+        <button class="sc-del" onclick="removeStop(${s.id})">✕</button>
+      </div>
+      <div class="sc-meta">${tb}${slb}${stb}</div>
+      <div class="sc-btns">
+        <button class="sb-btn livre ${s.status==='livre'?'active':''}" onclick="setStatus(${s.id},'livre')">✅ Livré</button>
+        <button class="sb-btn absent ${s.status==='absent'?'active':''}" onclick="setStatus(${s.id},'absent')">⚠️ Absent</button>
+        <button class="sb-btn echec ${s.status==='echec'?'active':''}" onclick="setStatus(${s.id},'echec')">❌ Échec</button>
+      </div>
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
+// ===================== RENDER ROUTE PANEL =====================
+function renderRoute() {
+  const panel = document.getElementById('routePanel');
+  const empty = document.getElementById('emptyRoute');
+  if (!stops.length) { if(empty) empty.style.display='block'; return; }
+  if (empty) empty.style.display='none';
+
+  const done = stops.filter(s=>s.status==='livre').length;
+  const absent = stops.filter(s=>s.status==='absent').length;
+  const echec = stops.filter(s=>s.status==='echec').length;
+  const rem = stops.filter(s=>!s.status).length;
+
+  let html = `<div class="summary-grid">
+    <div class="sum-item"><div class="sum-val">${stops.length}</div><div class="sum-lbl">Colis</div></div>
+    <div class="sum-item"><div class="sum-val" style="color:var(--success)">${done}</div><div class="sum-lbl">Livrés</div></div>
+    <div class="sum-item"><div class="sum-val" style="color:var(--warning)">${absent}</div><div class="sum-lbl">Absents</div></div>
+    <div class="sum-item"><div class="sum-val" style="color:var(--danger)">${echec}</div><div class="sum-lbl">Échecs</div></div>
+    <div class="sum-item"><div class="sum-val">${rem}</div><div class="sum-lbl">Restants</div></div>
+  </div>`;
+
+  if (totalDistKm) {
+    html += `<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px;padding:10px 14px;background:var(--gray);border-radius:8px;border:1px solid var(--gray-light);">
+      <span style="font-size:13px;color:var(--text-muted);">📏 Distance totale : <strong style="color:var(--text)">${totalDistKm} km</strong></span>
+      <span style="font-size:13px;color:var(--text-muted);">⏱️ Durée estimée : <strong style="color:var(--text)">${totalTimeMin} min</strong></span>
+      <span style="font-size:12px;background:rgba(255,209,0,0.12);color:var(--yellow);padding:3px 10px;border-radius:12px;font-weight:700;">⚡ GPS OPTIMISÉ</span>
+    </div>`;
+  }
+
+  html += '<div class="route-steps">';
+  stops.forEach((s, i) => {
+    const delay = i * 50;
+    const nc = s.status==='livre'?'done':s.status==='absent'?'warn':s.status==='echec'?'fail':'';
+    const tb = s.type==='express'?'<span class="badge b-express">EXPRESS</span>':s.type==='fragile'?'<span class="badge b-fragile">FRAGILE</span>':'';
+    const slb = s.slot?`<span class="badge b-time">🕐 ${s.slot}</span>`:'';
+    const stb = s.status?`<span class="badge b-${s.status}">${s.status==='livre'?'✅ Livré':s.status==='absent'?'⚠️ Absent':'❌ Échec'}</span>`:'<span class="badge" style="background:rgba(255,209,0,0.1);color:var(--yellow);">🔄 En attente</span>';
+    const dist = s.distFromPrev!==undefined && s.distFromPrev>0 ? `<span class="rs-dist">+${s.distFromPrev} km (${s.timeFromPrev} min)</span>` : i===0?'<span class="rs-dist">🏁 Départ</span>':'';
+    html += `<div class="rs" style="animation-delay:${delay}ms">
+      <div class="rs-num ${nc}">${i+1}</div>
+      <div class="rs-body">
+        <div class="rs-name">${s.name}</div>
+        <div class="rs-addr">📍 ${s.addr}</div>
+        <div class="rs-foot">${tb}${slb}${stb}${dist}</div>
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+  panel.innerHTML = html;
+  updateProgress();
+}
+
+// ===================== STATUS =====================
+function setStatus(id, status) {
+  const s = stops.find(s=>s.id===id);
+  if (!s) return;
+  s.status = s.status===status ? null : status;
+  renderSidebar();
+  renderRoute();
+  refreshMarkers();
+  updateHeader();
+  updateProgress();
+}
+
+function removeStop(id) {
+  stops = stops.filter(s=>s.id!==id);
+  renderSidebar();
+  renderRoute();
+  refreshMarkers();
+  updateHeader();
+  updateProgress();
+}
+
+// ===================== EXPORT PDF =====================
+function exportPDF() {
+  if (!stops.length) { showNotif('⚠️ Aucune tournée à exporter', true); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const now = new Date().toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  const done = stops.filter(s=>s.status==='livre').length;
+  const absent = stops.filter(s=>s.status==='absent').length;
+  const echec = stops.filter(s=>s.status==='echec').length;
+
+  // Header
+  doc.setFillColor(255, 209, 0);
+  doc.rect(0, 0, 210, 22, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.setTextColor(0, 0, 0);
+  doc.text('⚡ ChronoRoute — Feuille de Tournée', 14, 14);
+
+  doc.setFontSize(9);
+  doc.setTextColor(60,60,60);
+  doc.text(`Générée le ${now}`, 14, 28);
+  doc.text(`Total : ${stops.length} colis  |  Livrés : ${done}  |  Absents : ${absent}  |  Échecs : ${echec}${totalDistKm?`  |  Distance : ${totalDistKm} km`:''}`, 14, 34);
+
+  // Table header
+  let y = 44;
+  doc.setFillColor(30, 30, 30);
+  doc.rect(10, y-5, 190, 8, 'F');
+  doc.setTextColor(255, 209, 0);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.text('#', 14, y);
+  doc.text('DESTINATAIRE', 22, y);
+  doc.text('ADRESSE', 72, y);
+  doc.text('CRÉNEAU', 130, y);
+  doc.text('TYPE', 156, y);
+  doc.text('STATUT', 175, y);
+  y += 6;
+
+  // Rows
+  stops.forEach((s, i) => {
+    if (y > 270) { doc.addPage(); y = 20; }
+    const bg = i % 2 === 0;
+    if (bg) { doc.setFillColor(245, 245, 245); doc.rect(10, y-4, 190, 7, 'F'); }
+    doc.setTextColor(0,0,0);
+    doc.setFont('helvetica', i%2===0 ? 'normal' : 'normal');
+    doc.setFontSize(8);
+    doc.text(String(i+1), 14, y);
+    doc.text(s.name.substring(0,20), 22, y);
+    doc.text(s.addr.substring(0,35), 72, y);
+    doc.text(s.slot||'—', 130, y);
+    doc.text(s.type==='express'?'EXPRESS':s.type==='fragile'?'FRAGILE':'STD', 156, y);
+    const stTxt = s.status==='livre'?'LIVRÉ':s.status==='absent'?'ABSENT':s.status==='echec'?'ÉCHEC':'EN ATTENTE';
+    const stCol = s.status==='livre'?[0,180,120]:s.status==='absent'?[200,130,0]:s.status==='echec'?[200,50,50]:[100,100,100];
+    doc.setTextColor(...stCol);
+    doc.setFont('helvetica', 'bold');
+    doc.text(stTxt, 175, y);
+    y += 8;
+  });
+
+  // Footer
+  doc.setFillColor(240,240,240);
+  doc.rect(10, y+4, 190, 0.5, 'F');
+  doc.setTextColor(130,130,130);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  doc.text('ChronoRoute v2 — Outil d\'optimisation de tournée Chronopost', 14, y+12);
+
+  doc.save(`tournee_${new Date().toISOString().slice(0,10)}.pdf`);
+  showNotif('📄 PDF exporté !');
+}
+
+// ===================== TABS =====================
+function switchTab(tab) {
+  document.getElementById('tabMap').classList.toggle('active', tab==='map');
+  document.getElementById('tabRoute').classList.toggle('active', tab==='route');
+  document.getElementById('mapWrap').classList.toggle('hidden', tab!=='map');
+  document.getElementById('routePanel').classList.toggle('hidden', tab!=='route');
+  if (tab==='map' && map) setTimeout(()=>map.invalidateSize(), 50);
+}
+
+// ===================== HELPERS =====================
+function updateHeader() {
+  document.getElementById('hTotal').textContent = `📦 ${stops.length} colis`;
+  document.getElementById('hDone').textContent = `✅ ${stops.filter(s=>s.status==='livre').length} livrés`;
+  document.getElementById('hDist').textContent = totalDistKm ? `📏 ${totalDistKm} km` : '📏 —';
+}
+
+function updateProgress() {
+  const total = stops.length, done = stops.filter(s=>s.status==='livre').length;
+  document.getElementById('progFill').style.width = total ? (done/total*100)+'%' : '0%';
+}
+
+function showLoading(text, sub) {
+  document.getElementById('loadingText').textContent = text;
+  document.getElementById('loadingSub').textContent = sub;
+  document.getElementById('loadingOverlay').classList.remove('hidden');
+}
+function updateLoadingText(t) { document.getElementById('loadingText').textContent = t; }
+function updateLoadingSub(t) { document.getElementById('loadingSub').textContent = t; }
+function hideLoading() { document.getElementById('loadingOverlay').classList.add('hidden'); }
+
+function showNotif(msg, err=false) {
+  const n = document.getElementById('notif');
+  n.textContent = msg;
+  n.className = 'notif show' + (err?' error':'');
+  clearTimeout(n._t);
+  n._t = setTimeout(()=>n.classList.remove('show'), 2800);
+}
+
+function resetAll() {
+  if (!stops.length) return;
+  if (!confirm('Réinitialiser toute la tournée ?')) return;
+  stops = []; totalDistKm = 0; totalTimeMin = 0;
+  markers.forEach(m=>m.remove()); markers = [];
+  if (routeLine) { routeLine.remove(); routeLine = null; }
+  renderSidebar();
+  document.getElementById('routePanel').innerHTML = `<div class="empty-route" id="emptyRoute"><div class="ico">🚐</div><div class="txt">Ajoutez des arrêts<br>et optimisez la tournée</div></div>`;
+  updateHeader();
+  updateProgress();
+  showNotif('🗑️ Tournée réinitialisée');
+}
+
+function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
+
+// ===================== INIT =====================
+window.onload = () => { initMap(); };
+</script>
+</body>
+</html>
