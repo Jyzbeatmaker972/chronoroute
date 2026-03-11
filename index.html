@@ -208,6 +208,87 @@ transition: transform .2s, box-shadow .2s;
 .bnav-btn.action:active .ico-wrap { transform:scale(.92); }
 .bnav-btn.action { color: var(–text); }
 
+/* ── SCANNER MODAL ── */
+.scan-modal-overlay{position:fixed;inset:0;z-index:950;background:rgba(4,6,12,.92);backdrop-filter:blur(16px);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;opacity:0;pointer-events:none;transition:opacity .25s cubic-bezier(.4,0,.2,1);}
+.scan-modal-overlay.open{opacity:1;pointer-events:all;}
+.scan-sheet{background:var(–surface);border-radius:24px 24px 0 0;border-top:1px solid var(–border2);width:100%;max-width:560px;padding-bottom:calc(16px + var(–safe-bot));box-shadow:0 -16px 60px rgba(0,0,0,.7);transform:translateY(50px);transition:transform .3s cubic-bezier(.4,0,.2,1);}
+.scan-modal-overlay.open .scan-sheet{transform:translateY(0);}
+.scan-handle{width:36px;height:3px;background:var(–border2);border-radius:2px;margin:14px auto 0;}
+.scan-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 12px;border-bottom:1px solid var(–border);}
+.scan-title{font-family:‘Syne’,sans-serif;font-size:15px;font-weight:700;color:var(–text);}
+.scan-close{background:var(–surface2);border:1px solid var(–border2);width:30px;height:30px;border-radius:8px;font-size:14px;cursor:pointer;color:var(–text3);display:flex;align-items:center;justify-content:center;}
+
+/* Viewfinder */
+.scan-body{padding:18px;}
+.scan-viewfinder{position:relative;width:100%;aspect-ratio:4/3;border-radius:16px;overflow:hidden;background:#000;margin-bottom:14px;}
+#scanVideo{width:100%;height:100%;object-fit:cover;display:block;}
+.scan-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+.scan-frame{width:70%;aspect-ratio:1;position:relative;}
+.scan-frame::before,.scan-frame::after{content:’’;position:absolute;width:24px;height:24px;border-color:var(–cyan);border-style:solid;}
+.scan-frame::before{top:0;left:0;border-width:3px 0 0 3px;border-radius:4px 0 0 0;}
+.scan-frame::after{bottom:0;right:0;border-width:0 3px 3px 0;border-radius:0 0 4px 0;}
+.scan-frame-tr,.scan-frame-bl{position:absolute;width:24px;height:24px;border-color:var(–cyan);border-style:solid;}
+.scan-frame-tr{top:0;right:0;border-width:3px 3px 0 0;border-radius:0 4px 0 0;}
+.scan-frame-bl{bottom:0;left:0;border-width:0 0 3px 3px;border-radius:0 0 0 4px;}
+/* Ligne de scan animée */
+.scan-line{position:absolute;left:15%;right:15%;height:2px;background:linear-gradient(90deg,transparent,var(–cyan),transparent);box-shadow:0 0 8px var(–cyan);animation:scanLine 2s ease-in-out infinite;}
+@keyframes scanLine{0%{top:15%;opacity:1;}50%{top:82%;}100%{top:15%;opacity:1;}}
+.scan-status{text-align:center;font-family:‘JetBrains Mono’,monospace;font-size:12px;color:var(–text3);margin-bottom:16px;min-height:18px;}
+.scan-status.detected{color:var(–ok);}
+.scan-result-box{background:var(–bg2);border:1px solid var(–border2);border-radius:12px;padding:14px;margin-bottom:14px;display:none;}
+.scan-result-box.show{display:block;}
+.scan-result-num{font-family:‘JetBrains Mono’,monospace;font-size:13px;color:var(–cyan);margin-bottom:10px;word-break:break-all;}
+.scan-fields{display:flex;flex-direction:column;gap:8px;}
+.scan-field label{font-size:10px;font-weight:700;color:var(–text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px;display:block;}
+.scan-field input{font-size:14px;padding:10px 12px;}
+.scan-footer{padding:0 18px;display:flex;gap:9px;}
+.btn-scan-confirm{flex:1;background:linear-gradient(135deg,var(–ok),#059669);color:#fff;padding:13px;border-radius:10px;font-family:‘DM Sans’,sans-serif;font-size:15px;font-weight:700;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(16,185,129,.3);}
+.btn-scan-cancel{background:var(–surface2);color:var(–text2);padding:13px 18px;border-radius:10px;font-family:‘DM Sans’,sans-serif;font-size:15px;font-weight:600;border:1px solid var(–border2);cursor:pointer;}
+
+/* Bouton scan dans formulaire */
+.btn-scan{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border-radius:10px;font-family:‘DM Sans’,sans-serif;font-size:14px;font-weight:700;border:1.5px dashed rgba(0,212,255,.35);background:var(–cyan-dim);color:var(–cyan);cursor:pointer;transition:all .18s;margin-bottom:14px;}
+.btn-scan:active{opacity:.7;transform:scale(.97);}
+.btn-scan .scan-ico{font-size:18px;}
+.bnav-btn.bnav-opt {
+color: var(–amber);
+flex: 1.4;
+}
+.bnav-btn.bnav-opt .opt-wrap {
+width: 52px; height: 52px;
+background: linear-gradient(135deg, #F59E0B, #E57800);
+border-radius: 16px;
+display: flex; align-items: center; justify-content: center;
+box-shadow: 0 0 20px rgba(245,158,11,.5), 0 4px 16px rgba(0,0,0,.4);
+margin-bottom: 3px;
+transition: transform .18s cubic-bezier(.4,0,.2,1), box-shadow .18s;
+position: relative;
+}
+/* Pulse ring animé */
+.bnav-btn.bnav-opt .opt-wrap::before {
+content: ‘’;
+position: absolute; inset: -4px;
+border-radius: 20px;
+border: 2px solid rgba(245,158,11,.4);
+animation: optPulse 2s ease-in-out infinite;
+}
+@keyframes optPulse {
+0%,100% { opacity:.6; transform:scale(1); }
+50%      { opacity:0;  transform:scale(1.18); }
+}
+.bnav-btn.bnav-opt .opt-ico {
+font-size: 22px; line-height: 1;
+}
+.bnav-btn.bnav-opt:active .opt-wrap {
+transform: scale(.91);
+box-shadow: 0 0 10px rgba(245,158,11,.3), 0 2px 8px rgba(0,0,0,.4);
+}
+.bnav-btn.bnav-opt span:last-child {
+font-family: ‘Syne’, sans-serif;
+font-size: 10px; font-weight: 700;
+letter-spacing: .3px;
+text-transform: uppercase;
+}
+
 /* ═══════════════════════════════════════════
 MOBILE VIEWS
 ═══════════════════════════════════════════ */
@@ -730,6 +811,42 @@ transition:all .2s; display:flex; align-items:center; gap:6px; letter-spacing:.5
 .modal-sheet { max-height:80vh; }
 }
 @media(max-width:767px){.desktop-layout{display:none!important;}}
+
+/* ══ SCANNER ══ */
+.scan-overlay-modal{position:fixed;inset:0;z-index:960;background:rgba(4,6,12,.88);backdrop-filter:blur(14px);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s cubic-bezier(.4,0,.2,1);}
+.scan-overlay-modal.open{opacity:1;pointer-events:all;}
+.scan-sheet{background:var(–surface);border-radius:22px 22px 0 0;border-top:1px solid var(–border2);width:100%;max-width:560px;padding-bottom:calc(14px + var(–safe-bot));box-shadow:0 -16px 60px rgba(0,0,0,.7);transform:translateY(60px);transition:transform .3s cubic-bezier(.4,0,.2,1);max-height:92vh;overflow-y:auto;}
+.scan-overlay-modal.open .scan-sheet{transform:translateY(0);}
+.scan-handle{width:36px;height:3px;background:var(–border2);border-radius:2px;margin:13px auto 0;}
+.scan-header{display:flex;align-items:center;justify-content:space-between;padding:13px 18px 11px;border-bottom:1px solid var(–border);position:sticky;top:0;background:var(–surface);z-index:1;}
+.scan-title{font-family:‘Syne’,sans-serif;font-size:15px;font-weight:700;color:var(–text);}
+.scan-close{background:var(–surface2);border:1px solid var(–border2);width:30px;height:30px;border-radius:8px;font-size:14px;cursor:pointer;color:var(–text3);display:flex;align-items:center;justify-content:center;}
+.scan-body{padding:16px 18px;}
+/* Viewfinder */
+.scan-viewfinder{position:relative;width:100%;aspect-ratio:4/3;border-radius:14px;overflow:hidden;background:#000;margin-bottom:12px;border:1px solid var(–border2);}
+#scanVideo{width:100%;height:100%;object-fit:cover;display:block;}
+.scan-vf-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+.scan-frame{width:65%;aspect-ratio:1.6/1;position:relative;}
+.scan-corner{position:absolute;width:22px;height:22px;border-color:var(–cyan);border-style:solid;border-radius:3px;}
+.scan-corner.tl{top:0;left:0;border-width:3px 0 0 3px;border-radius:4px 0 0 0;}
+.scan-corner.tr{top:0;right:0;border-width:3px 3px 0 0;border-radius:0 4px 0 0;}
+.scan-corner.bl{bottom:0;left:0;border-width:0 0 3px 3px;border-radius:0 0 0 4px;}
+.scan-corner.br{bottom:0;right:0;border-width:0 3px 3px 0;border-radius:0 0 4px 0;}
+.scan-line-anim{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(–cyan),transparent);box-shadow:0 0 8px var(–cyan);animation:scanSwipe 1.8s ease-in-out infinite;}
+@keyframes scanSwipe{0%{top:8%;opacity:0;}10%{opacity:1;}90%{opacity:1;}100%{top:88%;opacity:0;}}
+.scan-status{text-align:center;font-size:12px;font-family:‘JetBrains Mono’,monospace;color:var(–text3);margin-bottom:14px;min-height:16px;transition:color .3s;}
+.scan-status.ok{color:var(–ok);}
+.scan-result-box{background:var(–bg2);border:1px solid var(–border2);border-radius:12px;padding:14px;margin-bottom:14px;display:none;animation:cardIn .25s cubic-bezier(.4,0,.2,1);}
+.scan-result-box.show{display:block;}
+.scan-result-num{font-family:‘JetBrains Mono’,monospace;font-size:13px;color:var(–cyan);word-break:break-all;background:var(–cyan-dim);padding:7px 10px;border-radius:7px;border:1px solid rgba(0,212,255,.15);}
+.scan-footer{padding:0 18px;display:flex;gap:9px;}
+.btn-scan-cancel{background:var(–surface2);color:var(–text2);padding:13px 18px;border-radius:10px;font-family:‘DM Sans’,sans-serif;font-size:15px;font-weight:600;border:1px solid var(–border2);cursor:pointer;}
+.btn-scan-confirm{flex:1;background:linear-gradient(135deg,var(–ok),#059669);color:#fff;padding:13px;border-radius:10px;font-family:‘DM Sans’,sans-serif;font-size:15px;font-weight:700;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(16,185,129,.3);}
+.btn-scan-confirm:active{opacity:.85;transform:scale(.97);}
+/* Bouton scan dans formulaire */
+.btn-scan{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;padding:13px;border-radius:10px;font-family:‘DM Sans’,sans-serif;font-size:14px;font-weight:700;border:1.5px dashed rgba(0,212,255,.3);background:var(–cyan-dim);color:var(–cyan);cursor:pointer;transition:all .18s;margin-bottom:14px;}
+.btn-scan:active{opacity:.7;transform:scale(.97);}
+.btn-scan .scan-ico{font-size:18px;}
 </style>
 
 </head>
@@ -767,6 +884,9 @@ transition:all .2s; display:flex; align-items:center; gap:6px; letter-spacing:.5
   <div class="view-inner">
     <div class="card">
       <div class="card-title">Nouvel arrêt</div>
+      <button class="btn-scan" onclick="openScanner()">
+        <span class="scan-ico">📷</span> Scanner le code-barres du colis
+      </button>
       <div class="fg"><label>Destinataire</label><input id="inName" type="text" placeholder="M. Dupont" autocomplete="off" autocorrect="off" spellcheck="false"/></div>
       <div class="fg"><label>Adresse complète</label><input id="inAddr" type="text" placeholder="12 rue de la Paix, Paris" autocomplete="off" autocorrect="off" spellcheck="false"/></div>
       <div class="fg"><label>Téléphone (optionnel)</label><input id="inTel" type="tel" placeholder="06 12 34 56 78"/></div>
@@ -780,7 +900,10 @@ transition:all .2s; display:flex; align-items:center; gap:6px; letter-spacing:.5
     <div class="card">
       <div class="card-title">Actions</div>
       <div style="display:flex;flex-direction:column;gap:9px;">
-        <button class="btn btn-opt" id="btnOpt" onclick="optimizeRoute()">⚡ Optimiser la tournée</button>
+        <button class="btn btn-opt" id="btnOpt" onclick="optimizeRoute()" style="font-size:17px;padding:16px;letter-spacing:.3px;box-shadow:0 0 28px rgba(245,158,11,.45),0 4px 16px rgba(0,0,0,.4);position:relative;overflow:hidden;">
+          <span style="font-size:20px;">⚡</span> Optimiser la tournée
+          <span style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.08),transparent);pointer-events:none;"></span>
+        </button>
         <button class="btn btn-ghost" onclick="openModal('csvModal')">📋 Importer liste CSV</button>
         <button class="btn btn-ghost" onclick="shareRoute()">🔗 Partager / QR Code</button>
         <button class="btn btn-ghost" onclick="exportPDF()">📄 Exporter PDF</button>
@@ -807,9 +930,9 @@ transition:all .2s; display:flex; align-items:center; gap:6px; letter-spacing:.5
 <div class="bottom-nav">
   <button class="bnav-btn active" id="bn-map"   onclick="showView('map')">  <span class="ico">🗺️</span>Carte</button>
   <button class="bnav-btn"        id="bn-list"  onclick="showView('list')"> <span class="ico">📦</span>Colis</button>
-  <button class="bnav-btn action" id="bn-add"   onclick="showView('add')">  <div class="ico-wrap">＋</div><span>Ajouter</span></button>
+  <button class="bnav-btn bnav-opt"              onclick="optimizeRoute()">  <div class="opt-wrap"><span class="opt-ico">⚡</span></div><span>Optimiser</span></button>
+  <button class="bnav-btn"        id="bn-add"   onclick="showView('add')">  <span class="ico">➕</span>Ajouter</button>
   <button class="bnav-btn"        id="bn-route" onclick="showView('route')"><span class="ico">📋</span>Tournée</button>
-  <button class="bnav-btn"        id="bn-stats" onclick="showView('stats')"><span class="ico">📊</span>Stats</button>
 </div>
 
 <!-- ══ DESKTOP LAYOUT ══ -->
@@ -917,6 +1040,52 @@ transition:all .2s; display:flex; align-items:center; gap:6px; letter-spacing:.5
         <input id="shareUrl" type="text" readonly style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text3);" onclick="this.select()"/>
         <button class="btn btn-primary" onclick="copyShareUrl()" style="width:auto;padding:11px 16px;flex-shrink:0;font-size:13px;">Copier</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SCANNER MODAL ══ -->
+
+<div class="scan-overlay-modal" id="scanModal">
+  <div class="scan-sheet">
+    <div class="scan-handle"></div>
+    <div class="scan-header">
+      <div class="scan-title">📷 Scanner le code-barres</div>
+      <button class="scan-close" onclick="closeScanner()">✕</button>
+    </div>
+    <div class="scan-body">
+      <div class="scan-viewfinder">
+        <video id="scanVideo" playsinline autoplay muted></video>
+        <div class="scan-vf-overlay">
+          <div class="scan-frame">
+            <div class="scan-corner tl"></div>
+            <div class="scan-corner tr"></div>
+            <div class="scan-corner bl"></div>
+            <div class="scan-corner br"></div>
+            <div class="scan-line-anim"></div>
+          </div>
+        </div>
+      </div>
+      <div class="scan-status" id="scanStatus">📷 Pointez vers le code-barres du colis</div>
+      <div class="scan-result-box" id="scanResultBox">
+        <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px;">N° colis détecté</div>
+        <div class="scan-result-num" id="scanResultNum">—</div>
+        <div style="height:1px;background:var(--border);margin:10px 0;"></div>
+        <div class="scan-fields">
+          <div class="fg"><label>Destinataire *</label><input id="scanName" type="text" placeholder="M. Dupont" autocomplete="off" autocorrect="off" spellcheck="false"/></div>
+          <div class="fg"><label>Adresse complète *</label><input id="scanAddr" type="text" placeholder="12 rue de la Paix, Paris" autocomplete="off" autocorrect="off" spellcheck="false"/></div>
+          <div class="fg"><label>Téléphone</label><input id="scanTel" type="tel" placeholder="06 12 34 56 78"/></div>
+          <div class="fg2">
+            <div><label>Créneau</label><select id="scanSlot"><option value="">Libre</option><option value="avant 10h">Avant 10h</option><option value="avant 12h">Avant 12h</option><option value="avant 13h">Avant 13h</option><option value="10h-14h">10h–14h</option><option value="14h-18h">14h–18h</option></select></div>
+            <div><label>Type</label><select id="scanType"><option value="standard">Standard</option><option value="express">Express</option><option value="fragile">Fragile</option></select></div>
+          </div>
+          <div class="fg"><label>Notes</label><textarea id="scanNote" placeholder="Digicode, étage…" style="min-height:56px;"></textarea></div>
+        </div>
+      </div>
+    </div>
+    <div class="scan-footer">
+      <button class="btn-scan-cancel" onclick="closeScanner()">Annuler</button>
+      <button class="btn-scan-confirm" id="scanConfirmBtn" onclick="confirmScan()" style="display:none;">✅ Ajouter le colis</button>
     </div>
   </div>
 </div>
@@ -1379,6 +1548,182 @@ function updS(s){document.getElementById('loadS').textContent=s;}
 function hideLoading(){document.getElementById('loading').classList.add('hidden');}
 function showToast(msg,type='info'){const t=document.getElementById('toast');t.textContent=msg;t.className=`toast ${type} show`;clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),3200);}
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+// ══════════════════════════════════════
+//  SCANNER CODE-BARRES
+// ══════════════════════════════════════
+let scanStream = null;
+let scanAnimFrame = null;
+let scanDetector = null;
+let scanDetected = false;
+
+async function openScanner() {
+  scanDetected = false;
+  document.getElementById('scanResultBox').classList.remove('show');
+  document.getElementById('scanConfirmBtn').style.display = 'none';
+  document.getElementById('scanStatus').textContent = '📷 Pointez vers le code-barres du colis';
+  document.getElementById('scanStatus').className = 'scan-status';
+  ['scanName','scanAddr','scanTel','scanNote'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('scanSlot').value = '';
+  document.getElementById('scanType').value = 'standard';
+  document.getElementById('scanResultNum').textContent = '—';
+
+  document.getElementById('scanModal').classList.add('open');
+
+  try {
+    scanStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
+    });
+    const video = document.getElementById('scanVideo');
+    video.srcObject = scanStream;
+    await video.play();
+
+    // BarcodeDetector natif (Chrome Android, Safari 17+)
+    if ('BarcodeDetector' in window) {
+      scanDetector = new BarcodeDetector({ formats: ['code_128','code_39','ean_13','ean_8','qr_code','data_matrix','aztec','pdf417'] });
+      scanLoop();
+    } else {
+      // Fallback : ZXing (chargé dynamiquement)
+      document.getElementById('scanStatus').textContent = '⏳ Chargement du moteur…';
+      await loadZXing();
+    }
+  } catch(e) {
+    document.getElementById('scanStatus').textContent = '❌ Caméra non autorisée — vérifiez les permissions';
+    console.error(e);
+  }
+}
+
+async function loadZXing() {
+  if (window.ZXing) { startZXing(); return; }
+  const s = document.createElement('script');
+  s.src = 'https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js';
+  s.onload = startZXing;
+  s.onerror = () => { document.getElementById('scanStatus').textContent = '❌ Impossible de charger le scanner'; };
+  document.head.appendChild(s);
+}
+
+function startZXing() {
+  try {
+    const hints = new Map();
+    const codeReader = new ZXing.BrowserMultiFormatReader(hints);
+    const video = document.getElementById('scanVideo');
+    document.getElementById('scanStatus').textContent = '📷 Pointez vers le code-barres du colis';
+    codeReader.decodeFromVideoElement(video, (result, err) => {
+      if (result && !scanDetected) {
+        onBarcodeDetected(result.getText());
+      }
+    });
+    // Stocker pour cleanup
+    window._zxingReader = codeReader;
+  } catch(e) {
+    document.getElementById('scanStatus').textContent = '❌ Erreur scanner';
+  }
+}
+
+async function scanLoop() {
+  if (!scanStream || scanDetected) return;
+  const video = document.getElementById('scanVideo');
+  if (video.readyState >= 2) {
+    try {
+      const results = await scanDetector.detect(video);
+      if (results.length > 0 && !scanDetected) {
+        onBarcodeDetected(results[0].rawValue);
+        return;
+      }
+    } catch(e) {}
+  }
+  scanAnimFrame = requestAnimationFrame(scanLoop);
+}
+
+function onBarcodeDetected(raw) {
+  if (scanDetected) return;
+  scanDetected = true;
+  if (scanAnimFrame) { cancelAnimationFrame(scanAnimFrame); scanAnimFrame = null; }
+
+  // Parsing code-barres Chronopost / GS1-128
+  const parsed = parseChronoBarcode(raw);
+
+  document.getElementById('scanResultNum').textContent = raw;
+  document.getElementById('scanStatus').textContent = '✅ Code détecté ! Complète les infos manquantes';
+  document.getElementById('scanStatus').className = 'scan-status ok';
+
+  // Pré-remplir ce qu'on a extrait
+  if (parsed.name)  document.getElementById('scanName').value = parsed.name;
+  if (parsed.addr)  document.getElementById('scanAddr').value = parsed.addr;
+  if (parsed.tel)   document.getElementById('scanTel').value  = parsed.tel;
+  if (parsed.slot)  document.getElementById('scanSlot').value = parsed.slot;
+  if (parsed.type)  document.getElementById('scanType').value = parsed.type;
+
+  document.getElementById('scanResultBox').classList.add('show');
+  document.getElementById('scanConfirmBtn').style.display = 'flex';
+
+  // Focus sur le premier champ vide
+  setTimeout(() => {
+    const first = ['scanName','scanAddr','scanTel'].find(id => !document.getElementById(id).value);
+    if (first) document.getElementById(first).focus();
+  }, 300);
+
+  // Vibration feedback
+  if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
+  showToast('📦 Code-barres détecté !', 'ok');
+}
+
+// Parsing GS1-128 / Code Chronopost
+function parseChronoBarcode(raw) {
+  const result = { name:'', addr:'', tel:'', slot:'', type:'standard' };
+
+  // GS1-128 : Application Identifiers
+  // AI 420 = code postal destination
+  // AI 421 = pays + code postal
+  // AI 91-99 = usage interne transporteur
+  const ai420 = raw.match(/420(\d{5})/);
+  const ai8005 = raw.match(/8005(\d+)/); // montant remboursement → express
+  // Détection Express Chronopost : numéro commence souvent par 8 ou XB
+  if (/^(8|XB|LP|AR|EP)/i.test(raw) || raw.includes('EXP')) result.type = 'express';
+
+  // Code postal extrait → on pré-remplit la ville si dispo
+  if (ai420) {
+    const cp = ai420[1];
+    result.addr = cp + ' '; // l'utilisateur complétera la rue + ville
+  }
+
+  // Numéro de suivi = raw (on note dans les notes)
+  // On ne peut pas extraire nom/tel depuis le CB seul → champs vides à compléter
+
+  return result;
+}
+
+function confirmScan() {
+  const name = document.getElementById('scanName').value.trim();
+  const addr = document.getElementById('scanAddr').value.trim();
+  if (!name || !addr) { showToast('⚠️ Nom et adresse requis', 'err'); return; }
+  const num = document.getElementById('scanResultNum').textContent;
+  const note = document.getElementById('scanNote').value.trim();
+  const noteWithNum = note ? `N° ${num} — ${note}` : `N° ${num}`;
+  stops.push({
+    id: Date.now(),
+    name,
+    addr,
+    tel:  document.getElementById('scanTel').value.trim(),
+    slot: document.getElementById('scanSlot').value,
+    type: document.getElementById('scanType').value,
+    note: noteWithNum,
+    status: null,
+    coords: null
+  });
+  closeScanner();
+  renderAll(); updateHeader(); save();
+  showToast(`📦 ${name} ajouté(e)`, 'ok');
+  if (!isDesktop()) showView('list');
+}
+
+function closeScanner() {
+  document.getElementById('scanModal').classList.remove('open');
+  scanDetected = false;
+  if (scanAnimFrame) { cancelAnimationFrame(scanAnimFrame); scanAnimFrame = null; }
+  if (scanStream) { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
+  if (window._zxingReader) { try { window._zxingReader.reset(); } catch(e){} window._zxingReader = null; }
+}
 
 // ══════════════════════════════════════
 //  INIT
