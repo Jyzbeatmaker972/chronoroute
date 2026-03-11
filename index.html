@@ -7,7 +7,12 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0A0E1A">
+<meta name="apple-mobile-web-app-title" content="ChronoRoute">
+<meta name="application-name" content="ChronoRoute">
+<meta name="theme-color" content="#080B14">
+<meta name="description" content="Optimiseur de tournées de livraison Chronopost">
+<link rel="apple-touch-icon" sizes="180x180" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%23080B14'/%3E%3Crect x='8' y='8' width='164' height='164' rx='34' fill='%230D1120' stroke='%2300D4FF' stroke-width='2' stroke-opacity='.3'/%3E%3Ctext x='90' y='118' font-size='90' text-anchor='middle'%3E⚡%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23080B14'/%3E%3Ctext x='16' y='24' font-size='18' text-anchor='middle'%3E⚡%3C/text%3E%3C/svg%3E">
 <title>ChronoRoute</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -812,6 +817,102 @@ transition:all .2s; display:flex; align-items:center; gap:6px; letter-spacing:.5
 }
 @media(max-width:767px){.desktop-layout{display:none!important;}}
 
+/* ══ SPLASH SCREEN ══ */
+#splash {
+position: fixed; inset: 0; z-index: 9999;
+background: var(–bg);
+display: flex; align-items: center; justify-content: center;
+flex-direction: column;
+transition: opacity .5s cubic-bezier(.4,0,.2,1), transform .5s cubic-bezier(.4,0,.2,1);
+}
+#splash.hide {
+opacity: 0;
+transform: scale(1.04);
+pointer-events: none;
+}
+#splash.gone { display: none; }
+
+/* Fond grain */
+#splash::before {
+content: ‘’;
+position: absolute; inset: 0;
+background: radial-gradient(ellipse 60% 50% at 50% 40%, rgba(0,212,255,.07) 0%, transparent 70%);
+pointer-events: none;
+}
+
+.splash-inner {
+display: flex; flex-direction: column; align-items: center; gap: 14px;
+animation: splashIn .6s cubic-bezier(.4,0,.2,1) both;
+}
+@keyframes splashIn {
+from { opacity:0; transform:translateY(20px); }
+to   { opacity:1; transform:translateY(0); }
+}
+
+.splash-logo-wrap {
+position: relative;
+width: 90px; height: 90px;
+display: flex; align-items: center; justify-content: center;
+margin-bottom: 4px;
+}
+.splash-logo {
+width: 80px; height: 80px;
+background: linear-gradient(135deg, #0D1120, #1A2238);
+border: 1.5px solid rgba(0,212,255,.25);
+border-radius: 22px;
+display: flex; align-items: center; justify-content: center;
+font-size: 38px;
+box-shadow: 0 0 40px rgba(0,212,255,.2), 0 8px 32px rgba(0,0,0,.5);
+position: relative; z-index: 1;
+}
+.splash-ring {
+position: absolute; inset: -6px;
+border-radius: 28px;
+border: 2px solid transparent;
+background: linear-gradient(135deg, rgba(0,212,255,.5), transparent, rgba(0,212,255,.2)) border-box;
+-webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+-webkit-mask-composite: destination-out;
+mask-composite: exclude;
+animation: ringRotate 3s linear infinite;
+}
+@keyframes ringRotate { to { transform: rotate(360deg); } }
+
+.splash-name {
+font-family: ‘Syne’, sans-serif;
+font-size: 28px; font-weight: 800;
+color: var(–text);
+letter-spacing: -.5px;
+}
+.splash-name span { color: var(–cyan); }
+
+.splash-sub {
+font-family: ‘JetBrains Mono’, monospace;
+font-size: 11px; font-weight: 500;
+color: var(–text3);
+text-transform: uppercase; letter-spacing: 2px;
+}
+
+.splash-bar {
+width: 120px; height: 2px;
+background: var(–surface2);
+border-radius: 2px;
+overflow: hidden;
+margin-top: 8px;
+}
+.splash-bar-fill {
+height: 100%;
+background: linear-gradient(90deg, var(–cyan), var(–ok));
+border-radius: 2px;
+box-shadow: 0 0 8px var(–cyan);
+animation: splashLoad 1.8s cubic-bezier(.4,0,.2,1) forwards;
+}
+@keyframes splashLoad {
+0%   { width: 0%; }
+60%  { width: 75%; }
+90%  { width: 95%; }
+100% { width: 100%; }
+}
+
 /* ══ SCANNER ══ */
 .scan-overlay-modal{position:fixed;inset:0;z-index:960;background:rgba(4,6,12,.88);backdrop-filter:blur(14px);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s cubic-bezier(.4,0,.2,1);}
 .scan-overlay-modal.open{opacity:1;pointer-events:all;}
@@ -852,8 +953,19 @@ transition:all .2s; display:flex; align-items:center; gap:6px; letter-spacing:.5
 </head>
 <body>
 
-<!-- ══ HEADER ══ -->
+<!-- ══ SPLASH SCREEN ══ -->
 
+<div id="splash">
+  <div class="splash-inner">
+    <div class="splash-logo-wrap">
+      <div class="splash-logo">⚡</div>
+      <div class="splash-ring"></div>
+    </div>
+    <div class="splash-name">Chrono<span>Route</span></div>
+    <div class="splash-sub">Optimiseur de tournées</div>
+    <div class="splash-bar"><div class="splash-bar-fill"></div></div>
+  </div>
+</div>
 <div class="header">
   <div class="logo">
     <div class="logo-mark">⚡</div>
@@ -1727,6 +1839,15 @@ window.addEventListener('load',()=>{
   loadFromURL();
   loadStorage();
   setTimeout(()=>{map.invalidateSize();dmap.invalidateSize();},200);
+
+  // Splash screen — disparaît après 2s minimum + chargement complet
+  const splash = document.getElementById('splash');
+  const hideSplash = () => {
+    splash.classList.add('hide');
+    setTimeout(() => splash.classList.add('gone'), 520);
+  };
+  // Minimum 2s pour que l'animation soit visible, puis on cache
+  setTimeout(hideSplash, 2000);
 });
 </script>
 
