@@ -2,1421 +2,343 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#1A56DB">
-<title>ChronoRoute</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<title>Delivery Tour</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link rel="stylesheet"
+href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
 <style>
-/* ═══════════════════════════════════════════
-   TOKENS
-═══════════════════════════════════════════ */
-:root {
-  --blue:      #1A56DB;
-  --blue-dk:   #1342B0;
-  --blue-lt:   #EBF2FF;
-  --blue-mid:  #C7DCFF;
-  --bg:        #F0F4FA;
-  --surface:   #FFFFFF;
-  --border:    #DDE5F0;
-  --text:      #0F1B2D;
-  --muted:     #8FA3BE;
-  --yellow:    #FFD100;
-  --ok:        #0DA874;
-  --warn:      #F59E0B;
-  --err:       #E53E3E;
-  --waze:      #33CCFF;
-  --gmaps:     #4285F4;
-  --r:         12px;
-  --sh:        0 2px 12px rgba(26,86,219,.10);
-  --sh-lg:     0 8px 32px rgba(26,86,219,.15);
-  /* safe areas iOS */
-  --safe-top:    env(safe-area-inset-top, 0px);
-  --safe-bot:    env(safe-area-inset-bottom, 0px);
-  --safe-left:   env(safe-area-inset-left, 0px);
-  --safe-right:  env(safe-area-inset-right, 0px);
-  --nav-h:       60px;
-  --header-h:    54px;
+
+body{
+font-family:Arial;
+margin:0;
+background:#111;
+color:white;
 }
 
-/* ═══════════════════════════════════════════
-   RESET
-═══════════════════════════════════════════ */
-*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
-html { height: 100%; }
-body {
-  font-family: 'DM Sans', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  height: 100%;
-  /* Empêche le bounce iOS qui cause des chevauchements */
-  overflow: hidden;
-  position: fixed;
-  width: 100%;
-  -webkit-font-smoothing: antialiased;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
+header{
+background:#c40000;
+padding:15px;
+text-align:center;
+font-weight:bold;
 }
 
-/* ═══════════════════════════════════════════
-   HEADER
-═══════════════════════════════════════════ */
-.header {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  z-index: 100;
-  height: calc(var(--header-h) + var(--safe-top));
-  padding-top: var(--safe-top);
-  background: var(--blue);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-left: calc(16px + var(--safe-left));
-  padding-right: calc(16px + var(--safe-right));
-  box-shadow: 0 2px 16px rgba(26,86,219,.3);
-}
-.logo {
-  display: flex; align-items: center; gap: 10px;
-}
-.logo-icon {
-  width: 30px; height: 30px;
-  background: var(--yellow);
-  border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 15px;
-}
-.logo-text { font-size: 16px; font-weight: 700; color: #fff; }
-.logo-text em { font-style:normal; font-size:11px; font-weight:400; color:rgba(255,255,255,.5); margin-left:5px; }
-.hpills { display:flex; gap:6px; }
-.hpill {
-  background: rgba(255,255,255,.15);
-  border: 1px solid rgba(255,255,255,.2);
-  border-radius: 16px;
-  padding: 3px 10px;
-  font-size: 11px; font-weight: 600; color: #fff;
+#map{
+height:300px;
 }
 
-/* ═══════════════════════════════════════════
-   PROGRESS BAR
-═══════════════════════════════════════════ */
-.prog {
-  position: fixed;
-  top: calc(var(--header-h) + var(--safe-top));
-  left: 0; right: 0;
-  height: 3px;
-  background: var(--blue-mid);
-  z-index: 99;
-}
-.prog-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--yellow), var(--ok));
-  transition: width .5s cubic-bezier(.4,0,.2,1);
+.container{
+padding:15px;
 }
 
-/* ═══════════════════════════════════════════
-   BOTTOM NAV
-═══════════════════════════════════════════ */
-.bottom-nav {
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
-  z-index: 100;
-  height: calc(var(--nav-h) + var(--safe-bot));
-  padding-bottom: var(--safe-bot);
-  background: var(--surface);
-  border-top: 1px solid var(--border);
-  display: flex;
-  box-shadow: 0 -4px 20px rgba(26,86,219,.1);
-}
-.bnav-btn {
-  flex: 1;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 3px;
-  background: transparent; border: none;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 10px; font-weight: 600;
-  color: var(--muted);
-  cursor: pointer;
-  transition: color .2s;
-  padding: 0;
-  -webkit-tap-highlight-color: transparent;
-}
-.bnav-btn .ico { font-size: 22px; line-height: 1; }
-.bnav-btn.active { color: var(--blue); }
-.bnav-btn.action { color: var(--text); }
-.bnav-btn.action .ico-wrap {
-  width: 42px; height: 42px;
-  background: var(--yellow);
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 20px;
-  box-shadow: 0 3px 12px rgba(255,209,0,.4);
-  margin-bottom: 2px;
+button{
+padding:10px;
+margin:5px;
+border:none;
+background:#c40000;
+color:white;
+border-radius:6px;
 }
 
-/* ═══════════════════════════════════════════
-   CONTENT AREA — chaque vue est full-screen
-═══════════════════════════════════════════ */
-.view {
-  position: fixed;
-  top: calc(var(--header-h) + var(--safe-top) + 3px);
-  left: var(--safe-left);
-  right: var(--safe-right);
-  bottom: calc(var(--nav-h) + var(--safe-bot));
-  overflow: hidden;
-  /* caché par défaut */
-  display: none;
-}
-.view.active { display: flex; flex-direction: column; }
-
-/* ═══════════════════════════════════════════
-   VUE CARTE
-═══════════════════════════════════════════ */
-#view-map { position: fixed; }
-#map {
-  position: absolute;
-  inset: 0;
-}
-.btn-gps {
-  position: absolute;
-  bottom: 20px; right: 16px;
-  z-index: 500;
-  width: 48px; height: 48px;
-  border-radius: 50%;
-  background: var(--blue);
-  color: #fff;
-  border: none;
-  font-size: 20px;
-  cursor: pointer;
-  box-shadow: var(--sh-lg);
-  display: flex; align-items: center; justify-content: center;
-  -webkit-tap-highlight-color: transparent;
+input, textarea{
+width:100%;
+padding:10px;
+margin-top:5px;
+margin-bottom:10px;
 }
 
-/* ═══════════════════════════════════════════
-   VUE AJOUTER
-═══════════════════════════════════════════ */
-#view-add {
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
-}
-.add-inner {
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  /* espace en bas pour que le dernier élément ne soit pas caché */
-  padding-bottom: 24px;
-}
-.section-title {
-  font-size: 12px; font-weight: 700;
-  color: var(--blue);
-  text-transform: uppercase; letter-spacing: 1px;
-  margin-bottom: 12px;
-}
-.form-card {
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: var(--r);
-  padding: 16px;
-  margin-bottom: 14px;
-  box-shadow: var(--sh);
-}
-.fg { margin-bottom: 12px; }
-.fg:last-child { margin-bottom: 0; }
-.fg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
-label {
-  display: block;
-  font-size: 11px; font-weight: 600;
-  color: var(--muted);
-  text-transform: uppercase; letter-spacing: .8px;
-  margin-bottom: 5px;
-}
-input, select {
-  width: 100%;
-  background: var(--bg);
-  border: 1.5px solid var(--border);
-  border-radius: 9px;
-  padding: 12px 13px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 15px; /* 16px min pour éviter zoom iOS */
-  color: var(--text);
-  outline: none;
-  transition: border-color .2s, box-shadow .2s;
-  -webkit-appearance: none;
-  appearance: none;
-}
-input:focus, select:focus {
-  border-color: var(--blue);
-  box-shadow: 0 0 0 3px rgba(26,86,219,.1);
-  background: #fff;
-}
-input::placeholder { color: var(--muted); }
-
-.btn {
-  display: flex; align-items: center; justify-content: center; gap: 7px;
-  width: 100%; padding: 14px;
-  border-radius: 11px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 15px; font-weight: 700;
-  border: none; cursor: pointer;
-  transition: all .18s cubic-bezier(.4,0,.2,1);
-  -webkit-tap-highlight-color: transparent;
-}
-.btn-add { background: var(--blue); color: #fff; box-shadow: 0 3px 12px rgba(26,86,219,.3); }
-.btn-add:active { transform: scale(.97); opacity: .9; }
-.btn-opt { background: var(--yellow); color: var(--text); box-shadow: 0 3px 12px rgba(255,209,0,.35); }
-.btn-opt:active { transform: scale(.97); }
-.btn-opt:disabled { opacity:.4; cursor:not-allowed; transform:none; }
-.btn-pdf { background: var(--bg); color: var(--blue); border: 1.5px solid var(--blue-mid); }
-.btn-pdf:active { opacity: .8; }
-.btn-reset { background: transparent; color: var(--muted); border: 1.5px solid var(--border); font-size: 13px; padding: 11px; }
-.btn-reset:active { color: var(--err); border-color: var(--err); }
-
-/* ═══════════════════════════════════════════
-   VUE LISTE (colis ajoutés)
-═══════════════════════════════════════════ */
-#view-list {
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
-}
-.list-inner {
-  padding: 12px 14px;
-  padding-bottom: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-}
-.list-header {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 4px;
-}
-.list-count { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; }
-
-.stop-card {
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: var(--r);
-  padding: 13px 13px 12px;
-  position: relative;
-  overflow: hidden;
-  animation: cardIn .25s cubic-bezier(.4,0,.2,1);
-  box-shadow: var(--sh);
-}
-@keyframes cardIn { from{opacity:0;transform:translateY(-6px);} to{opacity:1;transform:translateY(0);} }
-.stop-card::before {
-  content: '';
-  position: absolute; left:0; top:0; bottom:0; width:4px;
-  background: var(--blue-mid);
-  border-radius: 3px 0 0 3px;
-  transition: background .25s;
-}
-.stop-card.s-livre::before  { background: var(--ok); }
-.stop-card.s-absent::before { background: var(--warn); }
-.stop-card.s-echec::before  { background: var(--err); }
-
-/* Ligne 1 : num + nom + suppr */
-.sc-row1 { display:flex; align-items:center; gap:9px; margin-bottom:5px; }
-.sc-num {
-  width:28px; height:28px; border-radius:50%;
-  background:var(--blue); color:#fff;
-  font-size:13px; font-weight:700;
-  display:flex; align-items:center; justify-content:center;
-  flex-shrink:0;
-}
-.sc-name { flex:1; font-weight:600; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.sc-del {
-  background:transparent; border:none;
-  color:var(--muted); font-size:18px;
-  padding:4px 6px; border-radius:6px;
-  cursor:pointer; line-height:1;
-  transition:color .15s;
-  flex-shrink:0;
-}
-.sc-del:active { color:var(--err); }
-
-/* Ligne 2 : adresse */
-.sc-addr { font-size:12px; color:var(--muted); margin-bottom:8px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-
-/* Tags */
-.sc-tags { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:9px; }
-.tag { padding:3px 9px; border-radius:20px; font-size:10px; font-weight:700; letter-spacing:.2px; }
-.t-express  { background:rgba(229,62,62,.1);  color:var(--err); }
-.t-fragile  { background:rgba(139,92,246,.1); color:#7C3AED; }
-.t-standard { background:var(--bg); color:var(--muted); }
-.t-time     { background:var(--blue-lt); color:var(--blue); }
-.t-livre    { background:rgba(13,168,116,.12); color:var(--ok); }
-.t-absent   { background:rgba(245,158,11,.12); color:var(--warn); }
-.t-echec    { background:rgba(229,62,62,.12);  color:var(--err); }
-
-/* Boutons statut */
-.sc-status { display:flex; gap:6px; margin-bottom:9px; }
-.s-btn {
-  flex:1; padding:9px 4px;
-  border-radius:9px;
-  font-family:'DM Sans',sans-serif;
-  font-size:12px; font-weight:700;
-  border:1.5px solid transparent;
-  cursor:pointer; text-align:center;
-  transition:all .15s;
-  -webkit-tap-highlight-color:transparent;
-}
-.s-btn.livre  { background:rgba(13,168,116,.08);  color:var(--ok);   border-color:rgba(13,168,116,.2);  }
-.s-btn.absent { background:rgba(245,158,11,.08);  color:var(--warn); border-color:rgba(245,158,11,.2);  }
-.s-btn.echec  { background:rgba(229,62,62,.08);   color:var(--err);  border-color:rgba(229,62,62,.2);   }
-.s-btn.active { filter:brightness(1.2); box-shadow:0 2px 8px rgba(0,0,0,.1); }
-.s-btn:active { opacity:.75; }
-
-/* Boutons nav */
-.sc-nav { display:flex; gap:7px; }
-.nav-btn {
-  flex:1; padding:10px 8px;
-  border-radius:9px;
-  font-family:'DM Sans',sans-serif;
-  font-size:13px; font-weight:700;
-  border:none; cursor:pointer;
-  text-decoration:none;
-  display:flex; align-items:center; justify-content:center; gap:6px;
-  transition:all .15s;
-  -webkit-tap-highlight-color:transparent;
-}
-.nav-waze  { background:var(--waze);  color:#fff; box-shadow:0 2px 8px rgba(51,204,255,.3); }
-.nav-gmaps { background:var(--gmaps); color:#fff; box-shadow:0 2px 8px rgba(66,133,244,.3); }
-.nav-btn:active { opacity:.8; transform:scale(.97); }
-
-/* ═══════════════════════════════════════════
-   VUE TOURNÉE
-═══════════════════════════════════════════ */
-#view-route {
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
-}
-.route-inner {
-  padding: 14px;
-  padding-bottom: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.stop{
+background:#1c1c1c;
+padding:10px;
+margin-bottom:10px;
+border-radius:6px;
 }
 
-.stats-row { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
-.stat-card { background:var(--surface); border:1.5px solid var(--border); border-radius:var(--r); padding:12px 8px; text-align:center; box-shadow:var(--sh); }
-.stat-val { font-size:28px; font-weight:800; color:var(--blue); line-height:1; font-family:'DM Mono',monospace; }
-.stat-lbl { font-size:10px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.8px; margin-top:3px; }
-
-.info-bar { background:var(--blue); border-radius:var(--r); padding:13px 14px; display:flex; gap:14px; align-items:center; flex-wrap:wrap; box-shadow:0 4px 16px rgba(26,86,219,.25); }
-.info-item { display:flex; align-items:center; gap:6px; font-size:13px; font-weight:500; color:#fff; }
-.info-val { font-weight:700; font-size:15px; }
-.info-badge { background:var(--yellow); color:var(--text); padding:3px 10px; border-radius:16px; font-size:11px; font-weight:800; margin-left:auto; }
-
-/* Steps */
-.steps { display:flex; flex-direction:column; }
-.step { display:flex; gap:11px; padding-bottom:12px; position:relative; animation:stepIn .35s cubic-bezier(.4,0,.2,1) both; }
-@keyframes stepIn { from{opacity:0;transform:translateX(10px);} to{opacity:1;transform:translateX(0);} }
-.step:not(:last-child)::before { content:''; position:absolute; left:14px; top:30px; width:2px; height:calc(100% - 14px); background:linear-gradient(180deg,var(--blue-mid),transparent); }
-.step-num { width:30px; height:30px; border-radius:50%; background:var(--blue); color:#fff; font-size:13px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; z-index:1; box-shadow:0 2px 8px rgba(26,86,219,.3); transition:background .3s; }
-.step-num.done { background:var(--ok); }
-.step-num.warn { background:var(--warn); }
-.step-num.fail { background:var(--err); }
-.step-body { flex:1; background:var(--surface); border:1.5px solid var(--border); border-radius:var(--r); padding:11px 12px; box-shadow:var(--sh); }
-.step-name { font-weight:700; font-size:14px; margin-bottom:2px; }
-.step-addr { font-size:12px; color:var(--muted); margin-bottom:7px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.step-meta { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:9px; align-items:center; }
-.step-dist { font-size:11px; color:var(--blue); font-weight:600; background:var(--blue-lt); padding:2px 8px; border-radius:10px; }
-.step-nav { display:flex; gap:7px; }
-.step-nav a { flex:1; padding:10px 8px; border-radius:9px; font-size:13px; font-weight:700; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:6px; -webkit-tap-highlight-color:transparent; transition:opacity .15s; }
-.step-nav a:active { opacity:.8; }
-.snw { background:var(--waze);  color:#fff; }
-.sng { background:var(--gmaps); color:#fff; }
-
-/* Empty state */
-.empty { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:40px 20px; gap:10px; }
-.empty-ico { font-size:56px; opacity:.2; }
-.empty-txt { font-size:15px; font-weight:600; color:var(--muted); line-height:1.5; }
-
-/* ═══════════════════════════════════════════
-   LOADING OVERLAY
-═══════════════════════════════════════════ */
-.loading { position:fixed; inset:0; z-index:999; background:rgba(240,244,250,.9); backdrop-filter:blur(8px); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0; }
-.loading.hidden { display:none; }
-.spinner { width:44px; height:44px; border:3px solid var(--blue-mid); border-top-color:var(--blue); border-radius:50%; animation:spin .75s linear infinite; margin-bottom:16px; }
-@keyframes spin { to { transform:rotate(360deg); } }
-.load-t { font-size:16px; font-weight:700; color:var(--blue); margin-bottom:5px; }
-.load-s { font-size:13px; color:var(--muted); }
-
-/* ═══════════════════════════════════════════
-   TOAST
-═══════════════════════════════════════════ */
-.toast {
-  position: fixed;
-  bottom: calc(var(--nav-h) + var(--safe-bot) + 12px);
-  left: 50%;
-  transform: translateX(-50%) translateY(40px);
-  background: var(--text); color: #fff;
-  padding: 11px 20px; border-radius: 24px;
-  font-size: 13px; font-weight: 600;
-  z-index: 998; white-space: nowrap;
-  opacity: 0; transition: all .3s cubic-bezier(.4,0,.2,1);
-  box-shadow: 0 4px 20px rgba(0,0,0,.2);
-  max-width: calc(100vw - 32px);
-  text-align: center;
-}
-.toast.show  { transform:translateX(-50%) translateY(0); opacity:1; }
-.toast.ok    { background:var(--ok); }
-.toast.err   { background:var(--err); }
-.toast.info  { background:var(--blue); }
-
-/* ═══════════════════════════════════════════
-   MODALE ÉDITION
-═══════════════════════════════════════════ */
-.modal-overlay {
-  position: fixed; inset: 0; z-index: 900;
-  background: rgba(15,27,45,.5);
-  backdrop-filter: blur(6px);
-  display: flex; align-items: flex-end; justify-content: center;
-  opacity: 0; pointer-events: none;
-  transition: opacity .25s cubic-bezier(.4,0,.2,1);
-}
-.modal-overlay.open {
-  opacity: 1; pointer-events: all;
-}
-.modal-sheet {
-  background: var(--surface);
-  border-radius: 20px 20px 0 0;
-  width: 100%; max-width: 520px;
-  padding: 0 0 calc(16px + var(--safe-bot));
-  box-shadow: 0 -8px 40px rgba(26,86,219,.18);
-  transform: translateY(40px);
-  transition: transform .28s cubic-bezier(.4,0,.2,1);
-}
-.modal-overlay.open .modal-sheet {
-  transform: translateY(0);
-}
-.modal-handle {
-  width: 36px; height: 4px;
-  background: var(--border);
-  border-radius: 2px;
-  margin: 12px auto 0;
-}
-.modal-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 18px 10px;
-  border-bottom: 1px solid var(--border);
-}
-.modal-title {
-  font-size: 15px; font-weight: 700; color: var(--text);
-}
-.modal-close {
-  background: var(--bg); border: none;
-  width: 30px; height: 30px; border-radius: 50%;
-  font-size: 16px; cursor: pointer; color: var(--muted);
-  display: flex; align-items: center; justify-content: center;
-  transition: all .15s;
-}
-.modal-close:active { background: var(--border); }
-.modal-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
-.modal-footer { padding: 0 18px; display: flex; gap: 9px; }
-.btn-save {
-  flex: 1; background: var(--blue); color: #fff;
-  padding: 13px; border-radius: 11px;
-  font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 700;
-  border: none; cursor: pointer;
-  box-shadow: 0 3px 12px rgba(26,86,219,.3);
-  transition: all .18s;
-}
-.btn-save:active { opacity: .85; transform: scale(.97); }
-.btn-cancel {
-  background: var(--bg); color: var(--muted);
-  padding: 13px 18px; border-radius: 11px;
-  font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600;
-  border: 1.5px solid var(--border); cursor: pointer;
-  transition: all .18s;
-}
-.btn-cancel:active { opacity: .8; }
-
-/* ═══════════════════════════════════════════
-   LEAFLET POPUP
-═══════════════════════════════════════════ */
-.leaflet-popup-content-wrapper { border-radius:14px!important; box-shadow:var(--sh-lg)!important; border:1.5px solid var(--border)!important; font-family:'DM Sans',sans-serif!important; padding:0!important; }
-.leaflet-popup-content { margin:0!important; font-family:'DM Sans',sans-serif!important; }
-.leaflet-popup-tip { background:#fff!important; }
-.p-inner { padding:14px 15px; }
-.p-name { font-weight:700; font-size:14px; color:var(--text); margin-bottom:3px; }
-.p-addr { font-size:12px; color:var(--muted); margin-bottom:9px; }
-.p-tags { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:10px; }
-.p-nav { display:flex; gap:8px; }
-.p-nav a { flex:1; padding:10px; border-radius:9px; font-size:13px; font-weight:700; text-align:center; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:5px; }
-.p-nav .pw { background:var(--waze);  color:#fff; }
-.p-nav .pg { background:var(--gmaps); color:#fff; }
-
-/* ═══════════════════════════════════════════
-   DESKTOP — sidebar layout pour grands écrans
-═══════════════════════════════════════════ */
-@media (min-width: 768px) {
-  body { overflow: auto; position: static; }
-
-  .header {
-    position: fixed;
-    height: var(--header-h);
-    padding-top: 0;
-  }
-
-  .prog { top: var(--header-h); }
-
-  .bottom-nav { display: none; }
-
-  .desktop-layout {
-    position: fixed;
-    top: calc(var(--header-h) + 3px);
-    left: 0; right: 0; bottom: 0;
-    display: grid;
-    grid-template-columns: 340px 1fr;
-    overflow: hidden;
-  }
-
-  /* sidebar desktop */
-  .desktop-sidebar {
-    background: var(--surface);
-    border-right: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    box-shadow: 2px 0 12px rgba(26,86,219,.06);
-  }
-
-  .desktop-sidebar-top {
-    padding: 14px;
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-  }
-
-  .desktop-sidebar-list {
-    flex: 1;
-    overflow-y: auto;
-    padding: 10px 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  .desktop-sidebar-list::-webkit-scrollbar { width:4px; }
-  .desktop-sidebar-list::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
-
-  .desktop-sidebar-footer {
-    padding: 12px 14px;
-    border-top: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    gap: 7px;
-    flex-shrink: 0;
-  }
-
-  /* main desktop */
-  .desktop-main {
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  .desktop-tabs {
-    display: flex;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-    padding: 0 4px;
-  }
-  .dtab {
-    padding: 11px 18px;
-    font-size: 13px; font-weight: 600;
-    cursor: pointer; color: var(--muted);
-    border-bottom: 2px solid transparent;
-    transition: all .2s;
-    display: flex; align-items: center; gap: 6px;
-  }
-  .dtab.active { color: var(--blue); border-bottom-color: var(--blue); }
-
-  .desktop-map { flex: 1; position: relative; display: flex; flex-direction: column; }
-  .desktop-map.hidden { display: none; }
-  .desktop-map #map { flex: 1; }
-
-  .desktop-route {
-    flex: 1;
-    overflow-y: auto;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-  .desktop-route.hidden { display: none; }
-  .desktop-route::-webkit-scrollbar { width:4px; }
-  .desktop-route::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
-
-  /* cacher les vues mobile sur desktop */
-  .view, .bottom-nav { display: none !important; }
-  .desktop-layout { display: grid; }
-
-  .toast {
-    bottom: 20px;
-  }
-
-  /* form desktop plus compact */
-  .desktop-sidebar-top input,
-  .desktop-sidebar-top select { font-size: 13px; padding: 8px 10px; }
-  .desktop-sidebar-top .btn { padding: 9px; font-size: 13px; }
-}
-
-/* ═══════════════════════════════════════════
-   MOBILE — cacher desktop layout
-═══════════════════════════════════════════ */
-@media (max-width: 767px) {
-  .desktop-layout { display: none !important; }
-}
 </style>
+
 </head>
+
 <body>
 
-<!-- ══════════ HEADER ══════════ -->
-<div class="header">
-  <div class="logo">
-    <div class="logo-icon">⚡</div>
-    <div class="logo-text">ChronoRoute <em>v5</em></div>
-  </div>
-  <div class="hpills">
-    <div class="hpill" id="hTotal">📦 0</div>
-    <div class="hpill" id="hDone">✅ 0</div>
-  </div>
+<header>
+Delivery Tour
+</header>
+
+<div id="map"></div>
+
+<div class="container">
+
+<h3>Ajouter livraison</h3>
+
+<input id="adresse" placeholder="Adresse">
+
+<input id="client" placeholder="Client">
+
+<input id="tel" placeholder="Téléphone">
+
+<textarea id="note" placeholder="digicode, étage..."></textarea>
+
+<button onclick="addStop()">Ajouter</button>
+
+<hr>
+
+<input type="file" id="csvFile" accept=".csv">
+
+<button onclick="shareTour()">Partager tournée</button>
+
+<button onclick="generateQR()">QR Code</button>
+
+<div id="qrcode"></div>
+
+<hr>
+
+<h3>Tournée</h3>
+
+<div id="stops"></div>
+
 </div>
 
-<div class="prog"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
-
-<!-- ══════════ MOBILE VIEWS ══════════ -->
-
-<!-- VUE CARTE -->
-<div class="view active" id="view-map">
-  <div id="map"></div>
-  <button class="btn-gps" onclick="centerGPS()">📍</button>
-</div>
-
-<!-- VUE LISTE -->
-<div class="view" id="view-list">
-  <div class="list-inner" id="listInner">
-    <div class="empty"><div class="empty-ico">📭</div><div class="empty-txt">Aucun arrêt ajouté</div></div>
-  </div>
-</div>
-
-<!-- VUE AJOUTER -->
-<div class="view" id="view-add">
-  <div class="add-inner">
-    <div class="form-card">
-      <div class="section-title">📦 Nouvel arrêt</div>
-      <div class="fg">
-        <label>Destinataire</label>
-        <input id="inName" type="text" placeholder="M. Dupont" autocomplete="off" autocorrect="off" spellcheck="false"/>
-      </div>
-      <div class="fg">
-        <label>Adresse complète</label>
-        <input id="inAddr" type="text" placeholder="12 rue de la Paix, Paris" autocomplete="off" autocorrect="off" spellcheck="false"/>
-      </div>
-      <div class="fg2">
-        <div>
-          <label>Créneau</label>
-          <select id="inSlot">
-            <option value="">Libre</option>
-            <option value="avant 10h">Avant 10h</option>
-            <option value="avant 12h">Avant 12h</option>
-            <option value="avant 13h">Avant 13h</option>
-            <option value="10h-14h">10h–14h</option>
-            <option value="14h-18h">14h–18h</option>
-          </select>
-        </div>
-        <div>
-          <label>Type</label>
-          <select id="inType">
-            <option value="standard">Standard</option>
-            <option value="express">Express 10h</option>
-            <option value="fragile">Fragile</option>
-          </select>
-        </div>
-      </div>
-      <button class="btn btn-add" onclick="addStop()">+ Ajouter le colis</button>
-    </div>
-
-    <div class="form-card">
-      <div class="section-title">⚡ Actions</div>
-      <div style="display:flex;flex-direction:column;gap:9px;">
-        <button class="btn btn-opt" id="btnOpt" onclick="optimizeRoute()">⚡ Optimiser la tournée</button>
-        <button class="btn btn-pdf" onclick="exportPDF()">📄 Exporter PDF</button>
-        <button class="btn btn-reset" onclick="resetAll()">🗑️ Réinitialiser</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- VUE TOURNÉE -->
-<div class="view" id="view-route">
-  <div class="route-inner" id="routeInner">
-    <div class="empty"><div class="empty-ico">🚐</div><div class="empty-txt">Ajoutez des arrêts<br>et optimisez la tournée</div></div>
-  </div>
-</div>
-
-<!-- ══════════ BOTTOM NAV ══════════ -->
-<div class="bottom-nav">
-  <button class="bnav-btn active" id="bn-map" onclick="showView('map')">
-    <span class="ico">🗺️</span>Carte
-  </button>
-  <button class="bnav-btn" id="bn-list" onclick="showView('list')">
-    <span class="ico">📦</span>Colis
-  </button>
-  <button class="bnav-btn action" id="bn-add" onclick="showView('add')">
-    <div class="ico-wrap">➕</div>
-    <span>Ajouter</span>
-  </button>
-  <button class="bnav-btn" id="bn-route" onclick="showView('route')">
-    <span class="ico">📋</span>Tournée
-  </button>
-</div>
-
-<!-- ══════════ DESKTOP LAYOUT ══════════ -->
-<div class="desktop-layout">
-  <!-- Sidebar -->
-  <div class="desktop-sidebar">
-    <div class="desktop-sidebar-top">
-      <div class="section-title" style="margin-bottom:10px;">📦 Ajouter un arrêt</div>
-      <div class="fg"><label>Destinataire</label><input id="dinName" type="text" placeholder="M. Dupont" autocomplete="off"/></div>
-      <div class="fg"><label>Adresse</label><input id="dinAddr" type="text" placeholder="12 rue de la Paix, Paris" autocomplete="off"/></div>
-      <div class="fg2">
-        <div><label>Créneau</label>
-          <select id="dinSlot"><option value="">Libre</option><option value="avant 10h">Avant 10h</option><option value="avant 12h">Avant 12h</option><option value="avant 13h">Avant 13h</option><option value="10h-14h">10h–14h</option><option value="14h-18h">14h–18h</option></select>
-        </div>
-        <div><label>Type</label>
-          <select id="dinType"><option value="standard">Standard</option><option value="express">Express 10h</option><option value="fragile">Fragile</option></select>
-        </div>
-      </div>
-      <button class="btn btn-add" onclick="addStopDesktop()" style="font-size:13px;padding:9px;">+ Ajouter</button>
-    </div>
-    <div class="desktop-sidebar-list" id="dSidebarList">
-      <div class="empty"><div class="empty-ico" style="font-size:36px;">📭</div><div class="empty-txt" style="font-size:13px;">Aucun arrêt ajouté</div></div>
-    </div>
-    <div class="desktop-sidebar-footer">
-      <button class="btn btn-opt" id="dBtnOpt" onclick="optimizeRoute()" style="font-size:13px;padding:10px;">⚡ Optimiser la tournée</button>
-      <button class="btn btn-pdf" onclick="exportPDF()" style="font-size:13px;padding:9px;">📄 Exporter PDF</button>
-      <button class="btn btn-reset" onclick="resetAll()" style="font-size:12px;padding:8px;">🗑️ Réinitialiser</button>
-    </div>
-  </div>
-
-  <!-- Main -->
-  <div class="desktop-main">
-    <div class="desktop-tabs">
-      <div class="dtab active" id="dtabMap" onclick="switchDesktopTab('map')">🗺️ Carte</div>
-      <div class="dtab" id="dtabRoute" onclick="switchDesktopTab('route')">📋 Tournée</div>
-    </div>
-    <div class="desktop-map" id="dMap">
-      <div id="dmap" style="flex:1;min-height:0;"></div>
-      <button class="btn-gps" onclick="centerGPS()" style="bottom:16px;right:16px;">📍</button>
-    </div>
-    <div class="desktop-route hidden" id="dRoute"></div>
-  </div>
-</div>
-
-<!-- ══════════ MODALE ÉDITION ══════════ -->
-<div class="modal-overlay" id="editModal" onclick="closeEditModal(event)">
-  <div class="modal-sheet">
-    <div class="modal-handle"></div>
-    <div class="modal-header">
-      <div class="modal-title">✏️ Modifier l'arrêt</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="fg">
-        <label>Destinataire</label>
-        <input id="editName" type="text" placeholder="M. Dupont" autocomplete="off" autocorrect="off" spellcheck="false"/>
-      </div>
-      <div class="fg">
-        <label>Adresse complète</label>
-        <input id="editAddr" type="text" placeholder="12 rue de la Paix, Paris" autocomplete="off" autocorrect="off" spellcheck="false"/>
-      </div>
-      <div class="fg2">
-        <div>
-          <label>Créneau</label>
-          <select id="editSlot">
-            <option value="">Libre</option>
-            <option value="avant 10h">Avant 10h</option>
-            <option value="avant 12h">Avant 12h</option>
-            <option value="avant 13h">Avant 13h</option>
-            <option value="10h-14h">10h–14h</option>
-            <option value="14h-18h">14h–18h</option>
-          </select>
-        </div>
-        <div>
-          <label>Type</label>
-          <select id="editType">
-            <option value="standard">Standard</option>
-            <option value="express">Express 10h</option>
-            <option value="fragile">Fragile</option>
-          </select>
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
-      <button class="btn-save" onclick="saveEdit()">✅ Enregistrer</button>
-    </div>
-  </div>
-</div>
-
-<!-- LOADING -->
-<div class="loading hidden" id="loading">
-  <div class="spinner"></div>
-  <div class="load-t" id="loadT">Géocodage…</div>
-  <div class="load-s" id="loadS">Localisation des adresses</div>
-</div>
-
-<div class="toast" id="toast"></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
 
 <script>
-// ══════════════════════════════════════
-//  STATE
-// ══════════════════════════════════════
-let stops = [];
-let map = null, dmap = null;
-let markers = [], dmarkers = [];
-let routeLine = null, drouteLine = null;
-let totalDistKm = 0, totalTimeMin = 0;
-let gpsMarker = null;
-const isDesktop = () => window.innerWidth >= 768;
 
-// ══════════════════════════════════════
-//  INIT MAPS
-// ══════════════════════════════════════
-function initMaps() {
-  // Map mobile
-  map = L.map('map', { zoomControl: false, attributionControl: false })
-    .setView([48.8566, 2.3522], 12);
-  L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+const SAVE_KEY="delivery_tour";
 
-  // Map desktop
-  dmap = L.map('dmap', { zoomControl: false, attributionControl: false })
-    .setView([48.8566, 2.3522], 12);
-  L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(dmap);
-  L.control.zoom({ position: 'topright' }).addTo(dmap);
+let stops=
+JSON.parse(localStorage.getItem(SAVE_KEY)) || [];
+
+let map=L.map('map').setView([48.8566,2.3522],11);
+
+L.tileLayer(
+'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+).addTo(map);
+
+function save(){
+localStorage.setItem(SAVE_KEY,JSON.stringify(stops));
 }
 
-// ══════════════════════════════════════
-//  NAVIGATION URLS
-// ══════════════════════════════════════
-function wazeUrl(addr, coords) {
-  return coords
-    ? `https://waze.com/ul?ll=${coords.lat},${coords.lon}&navigate=yes`
-    : `https://waze.com/ul?q=${encodeURIComponent(addr)}&navigate=yes`;
-}
-function gmapsUrl(addr, coords) {
-  return coords
-    ? `https://www.google.com/maps/dir/?api=1&destination=${coords.lat},${coords.lon}&travelmode=driving`
-    : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}&travelmode=driving`;
-}
+function addStop(){
 
-// ══════════════════════════════════════
-//  GPS
-// ══════════════════════════════════════
-function centerGPS() {
-  if (!navigator.geolocation) { showToast('❌ GPS non disponible', 'err'); return; }
-  showToast('📡 Localisation…', 'info');
-  navigator.geolocation.getCurrentPosition(pos => {
-    const { latitude: lat, longitude: lng } = pos.coords;
-    const activeMap = isDesktop() ? dmap : map;
-    activeMap.setView([lat, lng], 15);
-    if (gpsMarker) gpsMarker.remove();
-    const icon = L.divIcon({
-      className: '',
-      html: `<div style="width:16px;height:16px;border-radius:50%;background:#1A56DB;border:3px solid #fff;box-shadow:0 0 0 4px rgba(26,86,219,.25);"></div>`,
-      iconSize: [16, 16], iconAnchor: [8, 8]
-    });
-    gpsMarker = L.marker([lat, lng], { icon }).addTo(activeMap).bindPopup('📍 Votre position').openPopup();
-    showToast('📍 Position trouvée', 'ok');
-  }, () => showToast('❌ Position refusée', 'err'));
+let stop={
+adresse:adresse.value,
+client:client.value,
+tel:tel.value,
+note:note.value,
+status:"pending"
+};
+
+stops.push(stop);
+
+save();
+render();
+
+adresse.value="";
+client.value="";
+tel.value="";
+note.value="";
 }
 
-// ══════════════════════════════════════
-//  API
-// ══════════════════════════════════════
-async function geocode(addr) {
-  const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addr)}&limit=1`, { headers: { 'Accept-Language': 'fr' } });
-  const d = await r.json();
-  if (!d.length) return null;
-  return { lat: parseFloat(d[0].lat), lon: parseFloat(d[0].lon) };
-}
-async function getMatrix(coords) {
-  const s = coords.map(c => `${c.lon},${c.lat}`).join(';');
-  return (await fetch(`https://router.project-osrm.org/table/v1/driving/${s}?annotations=duration,distance`)).json();
-}
-async function getRoute(coords) {
-  const s = coords.map(c => `${c.lon},${c.lat}`).join(';');
-  return (await fetch(`https://router.project-osrm.org/route/v1/driving/${s}?overview=full&geometries=geojson`)).json();
-}
-function tsp(mx, n) {
-  const vis = new Array(n).fill(false);
-  const tour = [0]; vis[0] = true;
-  for (let i = 1; i < n; i++) {
-    const last = tour[tour.length - 1];
-    let best = -1, bestD = Infinity;
-    for (let j = 0; j < n; j++) if (!vis[j] && mx[last][j] < bestD) { bestD = mx[last][j]; best = j; }
-    vis[best] = true; tour.push(best);
-  }
-  return tour;
-}
+function render(){
 
-// ══════════════════════════════════════
-//  ADD STOP
-// ══════════════════════════════════════
-function collectForm(prefix = '') {
-  const p = prefix;
-  return {
-    name: document.getElementById(p + 'inName').value.trim(),
-    addr: document.getElementById(p + 'inAddr').value.trim(),
-    slot: document.getElementById(p + 'inSlot').value,
-    type: document.getElementById(p + 'inType').value,
-  };
-}
-function clearForm(prefix = '') {
-  const p = prefix;
-  document.getElementById(p + 'inName').value = '';
-  document.getElementById(p + 'inAddr').value = '';
-  document.getElementById(p + 'inSlot').value = '';
-  document.getElementById(p + 'inType').value = 'standard';
-}
+const container=document.getElementById("stops");
 
-function addStop() { doAdd(collectForm()); clearForm(); }
-function addStopDesktop() { doAdd(collectForm('d')); clearForm('d'); }
+container.innerHTML="";
 
-function doAdd({ name, addr, slot, type }) {
-  if (!name || !addr) { showToast('⚠️ Nom et adresse requis', 'err'); return; }
-  stops.push({ id: Date.now(), name, addr, slot, type, status: null, coords: null });
-  renderAll();
-  updateHeader();
-  showToast(`📦 ${name} ajouté(e)`, 'ok');
-  // Aller vers la liste sur mobile après ajout
-  if (!isDesktop()) showView('list');
-}
+stops.forEach((s,i)=>{
 
-// ══════════════════════════════════════
-//  OPTIMIZE
-// ══════════════════════════════════════
-async function optimizeRoute() {
-  if (stops.length < 2) { showToast('⚠️ Minimum 2 arrêts', 'err'); return; }
-  const pri = { express: 0, fragile: 1, standard: 2 };
-  const slo = { 'avant 10h': 0, 'avant 12h': 1, 'avant 13h': 2, '10h-14h': 3, '14h-18h': 4, '': 5 };
-  stops.sort((a, b) => {
-    const dp = pri[a.type] - pri[b.type]; if (dp) return dp;
-    return (slo[a.slot] ?? 5) - (slo[b.slot] ?? 5);
-  });
-  setBtnsDisabled(true);
-  showLoading('Géocodage des adresses', `0 / ${stops.length}`);
-  try {
-    for (let i = 0; i < stops.length; i++) {
-      updS(`Adresse ${i + 1}/${stops.length} : ${stops[i].name}`);
-      if (!stops[i].coords) {
-        const geo = await geocode(stops[i].addr);
-        if (!geo) { showToast(`❌ Introuvable : ${stops[i].addr}`, 'err'); hideLoading(); setBtnsDisabled(false); return; }
-        stops[i].coords = geo;
-      }
-      await sleep(300);
-    }
-    updT('Calcul distances'); updS('OSRM…');
-    const mx = await getMatrix(stops.map(s => s.coords));
-    updT('Optimisation'); updS('TSP…');
-    const tour = tsp(mx.durations, stops.length);
-    stops = tour.map((idx, i) => ({ ...stops[idx], order: i + 1 }));
-    updT('Tracé itinéraire'); updS('Récupération…');
-    const rd = await getRoute(stops.map(s => s.coords));
-    totalDistKm = (rd.routes[0].distance / 1000).toFixed(1);
-    totalTimeMin = Math.round(rd.routes[0].duration / 60);
-    const legs = rd.routes[0].legs;
-    stops.forEach((s, i) => {
-      s.distFromPrev = i === 0 ? 0 : (legs[i - 1].distance / 1000).toFixed(2);
-      s.timeFromPrev = i === 0 ? 0 : Math.round(legs[i - 1].duration / 60);
-    });
-    drawMaps(rd.routes[0].geometry.coordinates);
-    hideLoading();
-    renderAll();
-    updateHeader();
-    updateProgress();
-    showToast(`⚡ ${totalDistKm} km · ${totalTimeMin} min`, 'ok');
-    // Basculer sur la tournée après optimisation
-    if (!isDesktop()) showView('route');
-    else switchDesktopTab('route');
-  } catch (e) {
-    console.error(e); hideLoading();
-    showToast('❌ Erreur réseau', 'err');
-  }
-  setBtnsDisabled(false);
-}
+let div=document.createElement("div");
+div.className="stop";
 
-// ══════════════════════════════════════
-//  MAP DRAW
-// ══════════════════════════════════════
-function stopColor(s) {
-  if (s.status === 'livre') return { bg: '#0DA874', fg: '#fff' };
-  if (s.status === 'absent') return { bg: '#F59E0B', fg: '#fff' };
-  if (s.status === 'echec') return { bg: '#E53E3E', fg: '#fff' };
-  return { bg: '#1A56DB', fg: '#fff' };
-}
-function makeMarkerIcon(s, i) {
-  const { bg, fg } = stopColor(s);
-  return L.divIcon({
-    className: '',
-    html: `<div style="width:40px;height:40px;border-radius:50%;background:${bg};color:${fg};font-family:'DM Sans',sans-serif;font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;border:3px solid #fff;box-shadow:0 3px 12px rgba(0,0,0,.2);">${i + 1}</div>`,
-    iconSize: [40, 40], iconAnchor: [20, 20], popupAnchor: [0, -24]
-  });
-}
-function popupHTML(s) {
-  const tb = s.type === 'express' ? '<span class="tag t-express">EXPRESS</span>' : s.type === 'fragile' ? '<span class="tag t-fragile">FRAGILE</span>' : '<span class="tag t-standard">STD</span>';
-  const slb = s.slot ? `<span class="tag t-time">🕐 ${s.slot}</span>` : '';
-  const stb = s.status ? `<span class="tag t-${s.status}">${s.status === 'livre' ? '✅ Livré' : s.status === 'absent' ? '⚠️ Absent' : '❌ Échec'}</span>` : '';
-  return `<div class="p-inner"><div class="p-name">${s.name}</div><div class="p-addr">📍 ${s.addr}</div><div class="p-tags">${tb}${slb}${stb}</div><div class="p-nav"><a href="${wazeUrl(s.addr, s.coords)}" target="_blank" class="pw">🚗 Waze</a><a href="${gmapsUrl(s.addr, s.coords)}" target="_blank" class="pg">🗺️ Maps</a></div></div>`;
-}
+div.innerHTML=`
 
-function addMarkersToMap(m, markerArr) {
-  stops.forEach((s, i) => {
-    if (!s.coords) return;
-    markerArr.push(L.marker([s.coords.lat, s.coords.lon], { icon: makeMarkerIcon(s, i) }).addTo(m).bindPopup(popupHTML(s), { maxWidth: 240 }));
-  });
-}
+<b>${s.client}</b><br>
 
-function drawMaps(geoCoords) {
-  // Clear
-  markers.forEach(m => m.remove()); markers = [];
-  dmarkers.forEach(m => m.remove()); dmarkers = [];
-  if (routeLine) { routeLine.remove(); routeLine = null; }
-  if (drouteLine) { drouteLine.remove(); drouteLine = null; }
+${s.adresse}<br>
 
-  const latlngs = geoCoords.map(c => [c[1], c[0]]);
-  routeLine = L.polyline(latlngs, { color: '#1A56DB', weight: 5, opacity: .75 }).addTo(map);
-  drouteLine = L.polyline(latlngs, { color: '#1A56DB', weight: 5, opacity: .75 }).addTo(dmap);
+${s.note}<br><br>
 
-  addMarkersToMap(map, markers);
-  addMarkersToMap(dmap, dmarkers);
+<a href="tel:${s.tel}">
+<button>📞 Appeler</button>
+</a>
 
-  map.fitBounds(routeLine.getBounds(), { padding: [32, 32] });
-  dmap.fitBounds(drouteLine.getBounds(), { padding: [32, 32] });
-}
+<button onclick="navigate('${s.adresse}')">
+🧭 Naviguer
+</button>
 
-function refreshMarkers() {
-  markers.forEach(m => m.remove()); markers = [];
-  dmarkers.forEach(m => m.remove()); dmarkers = [];
-  if (stops.some(s => s.coords)) {
-    addMarkersToMap(map, markers);
-    addMarkersToMap(dmap, dmarkers);
-  }
-}
+<input type="file" accept="image/*"
+onchange="uploadPhoto(event,${i})">
 
-// ══════════════════════════════════════
-//  RENDER
-// ══════════════════════════════════════
-function renderAll() {
-  renderMobileList();
-  renderDesktopSidebar();
-  renderMobileRoute();
-  renderDesktopRoute();
-}
+<canvas id="sig${i}" width="300" height="100"
+style="background:white"></canvas>
 
-function stopCardHTML(s, i) {
-  const sc = s.status ? `s-${s.status}` : '';
-  const tb = s.type === 'express' ? '<span class="tag t-express">EXPRESS</span>' : s.type === 'fragile' ? '<span class="tag t-fragile">FRAGILE</span>' : '<span class="tag t-standard">STD</span>';
-  const slb = s.slot ? `<span class="tag t-time">🕐 ${s.slot}</span>` : '';
-  const stb = s.status ? `<span class="tag t-${s.status}">${s.status === 'livre' ? '✅ Livré' : s.status === 'absent' ? '⚠️ Absent' : '❌ Échec'}</span>` : '';
-  return `<div class="stop-card ${sc}">
-    <div class="sc-row1">
-      <div class="sc-num">${i + 1}</div>
-      <div class="sc-name">${s.name}</div>
-      <button class="sc-del" onclick="openEdit(${s.id})" style="color:var(--blue);font-size:16px;" title="Modifier">✏️</button>
-      <button class="sc-del" onclick="removeStop(${s.id})">✕</button>
-    </div>
-    <div class="sc-addr">📍 ${s.addr}</div>
-    <div class="sc-tags">${tb}${slb}${stb}</div>
-    <div class="sc-status">
-      <button class="s-btn livre ${s.status === 'livre' ? 'active' : ''}" onclick="setStatus(${s.id},'livre')">✅ Livré</button>
-      <button class="s-btn absent ${s.status === 'absent' ? 'active' : ''}" onclick="setStatus(${s.id},'absent')">⚠️ Absent</button>
-      <button class="s-btn echec ${s.status === 'echec' ? 'active' : ''}" onclick="setStatus(${s.id},'echec')">❌ Échec</button>
-    </div>
-    <div class="sc-nav">
-      <a href="${wazeUrl(s.addr, s.coords)}" target="_blank" class="nav-btn nav-waze">🚗 Waze</a>
-      <a href="${gmapsUrl(s.addr, s.coords)}" target="_blank" class="nav-btn nav-gmaps">🗺️ Google Maps</a>
-    </div>
-  </div>`;
-}
+<button onclick="saveSignature(${i})">
+Signature OK
+</button>
 
-function renderMobileList() {
-  const el = document.getElementById('listInner');
-  if (!stops.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-ico">📭</div><div class="empty-txt">Aucun arrêt ajouté</div></div>';
-    return;
-  }
-  el.innerHTML = `<div class="list-header"><span class="list-count">${stops.length} arrêt${stops.length > 1 ? 's' : ''}</span></div>` +
-    stops.map((s, i) => stopCardHTML(s, i)).join('');
-}
+<button onclick="removeStop(${i})">
+Supprimer
+</button>
 
-function renderDesktopSidebar() {
-  const el = document.getElementById('dSidebarList');
-  if (!stops.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-ico" style="font-size:36px;">📭</div><div class="empty-txt" style="font-size:13px;">Aucun arrêt</div></div>';
-    return;
-  }
-  el.innerHTML = stops.map((s, i) => stopCardHTML(s, i)).join('');
-}
+`;
 
-function routePanelHTML() {
-  if (!stops.length) return '<div class="empty"><div class="empty-ico">🚐</div><div class="empty-txt">Ajoutez des arrêts<br>et optimisez</div></div>';
-  const done = stops.filter(s => s.status === 'livre').length;
-  const abs = stops.filter(s => s.status === 'absent').length;
-  const ech = stops.filter(s => s.status === 'echec').length;
-  const rem = stops.filter(s => !s.status).length;
+container.appendChild(div);
 
-  let html = `<div class="stats-row">
-    <div class="stat-card"><div class="stat-val" style="color:var(--ok)">${done}</div><div class="stat-lbl">Livrés</div></div>
-    <div class="stat-card"><div class="stat-val" style="color:var(--warn)">${abs}</div><div class="stat-lbl">Absents</div></div>
-    <div class="stat-card"><div class="stat-val" style="color:var(--blue)">${rem}</div><div class="stat-lbl">Restants</div></div>
-  </div>`;
+let canvas=
+document.getElementById("sig"+i);
 
-  if (totalDistKm) {
-    html += `<div class="info-bar">
-      <div class="info-item">📏 <span class="info-val">${totalDistKm} km</span></div>
-      <div class="info-item">⏱️ <span class="info-val">${totalTimeMin} min</span></div>
-      <div class="info-badge">⚡ OPTIMISÉ</div>
-    </div>`;
-  }
+let pad=new SignaturePad(canvas);
 
-  html += '<div class="steps">';
-  stops.forEach((s, i) => {
-    const nc = s.status === 'livre' ? 'done' : s.status === 'absent' ? 'warn' : s.status === 'echec' ? 'fail' : '';
-    const tb = s.type === 'express' ? '<span class="tag t-express">EXPRESS</span>' : s.type === 'fragile' ? '<span class="tag t-fragile">FRAGILE</span>' : '';
-    const slb = s.slot ? `<span class="tag t-time">🕐 ${s.slot}</span>` : '';
-    const stb = s.status ? `<span class="tag t-${s.status}">${s.status === 'livre' ? '✅ Livré' : s.status === 'absent' ? '⚠️ Absent' : '❌ Échec'}</span>` : `<span class="tag" style="background:var(--blue-lt);color:var(--blue);">🔄 En attente</span>`;
-    const dist = s.distFromPrev > 0 ? `<span class="step-dist">+${s.distFromPrev} km · ${s.timeFromPrev} min</span>` : i === 0 ? '<span class="step-dist">🏁 Départ</span>' : '';
-    html += `<div class="step" style="animation-delay:${i * 40}ms">
-      <div class="step-num ${nc}">${i + 1}</div>
-      <div class="step-body">
-        <div class="step-name">${s.name}</div>
-        <div class="step-addr">📍 ${s.addr}</div>
-        <div class="step-meta">${tb}${slb}${stb}${dist}</div>
-        <div class="step-nav">
-          <a href="${wazeUrl(s.addr, s.coords)}" target="_blank" class="snw">🚗 Waze</a>
-          <a href="${gmapsUrl(s.addr, s.coords)}" target="_blank" class="sng">🗺️ Maps</a>
-        </div>
-      </div>
-    </div>`;
-  });
-  html += '</div>';
-  return html;
-}
+s.pad=pad;
 
-function renderMobileRoute() {
-  document.getElementById('routeInner').innerHTML = routePanelHTML();
-}
-function renderDesktopRoute() {
-  document.getElementById('dRoute').innerHTML = routePanelHTML();
-}
-
-// ══════════════════════════════════════
-//  STATUS / REMOVE
-// ══════════════════════════════════════
-// ══════════════════════════════════════
-//  MODALE ÉDITION
-// ══════════════════════════════════════
-let editingId = null;
-
-function openEdit(id) {
-  const s = stops.find(s => s.id === id);
-  if (!s) return;
-  editingId = id;
-  document.getElementById('editName').value = s.name;
-  document.getElementById('editAddr').value = s.addr;
-  document.getElementById('editSlot').value = s.slot || '';
-  document.getElementById('editType').value = s.type || 'standard';
-  document.getElementById('editModal').classList.add('open');
-  // Focus sur le premier champ après animation
-  setTimeout(() => document.getElementById('editName').focus(), 300);
-}
-
-function closeModal() {
-  document.getElementById('editModal').classList.remove('open');
-  editingId = null;
-}
-
-function closeEditModal(e) {
-  // Fermer si clic sur l'overlay (pas sur la sheet)
-  if (e.target === document.getElementById('editModal')) closeModal();
-}
-
-function saveEdit() {
-  if (!editingId) return;
-  const s = stops.find(s => s.id === editingId);
-  if (!s) return;
-
-  const newName = document.getElementById('editName').value.trim();
-  const newAddr = document.getElementById('editAddr').value.trim();
-  const newSlot = document.getElementById('editSlot').value;
-  const newType = document.getElementById('editType').value;
-
-  if (!newName || !newAddr) { showToast('⚠️ Nom et adresse requis', 'err'); return; }
-
-  const addrChanged = newAddr !== s.addr;
-
-  s.name = newName;
-  s.addr = newAddr;
-  s.slot = newSlot;
-  s.type = newType;
-
-  // Si l'adresse a changé, réinitialiser les coords pour forcer un nouveau géocodage
-  if (addrChanged) {
-    s.coords = null;
-    s.distFromPrev = undefined;
-    s.timeFromPrev = undefined;
-    showToast(`✏️ Modifié — relancez l'optimisation`, 'info');
-  } else {
-    showToast(`✅ ${s.name} mis à jour`, 'ok');
-  }
-
-  closeModal();
-  renderAll();
-  refreshMarkers();
-  updateHeader();
-}
-
-function setStatus(id, st) {
-  const s = stops.find(s => s.id === id); if (!s) return;
-  s.status = s.status === st ? null : st;
-  renderAll(); refreshMarkers(); updateHeader(); updateProgress();
-}
-function removeStop(id) {
-  stops = stops.filter(s => s.id !== id);
-  renderAll(); refreshMarkers(); updateHeader(); updateProgress();
-}
-
-// ══════════════════════════════════════
-//  EXPORT PDF
-// ══════════════════════════════════════
-function exportPDF() {
-  if (!stops.length) { showToast('⚠️ Aucune tournée', 'err'); return; }
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  const now = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-  const done = stops.filter(s => s.status === 'livre').length;
-  const abs = stops.filter(s => s.status === 'absent').length;
-  const ech = stops.filter(s => s.status === 'echec').length;
-
-  doc.setFillColor(26, 86, 219); doc.rect(0, 0, 210, 24, 'F');
-  doc.setFillColor(255, 209, 0); doc.rect(0, 0, 5, 24, 'F');
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.setTextColor(255, 255, 255);
-  doc.text('ChronoRoute — Feuille de Tournée', 14, 15);
-  doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(180, 200, 240);
-  doc.text(`Générée le ${now}`, 14, 30);
-  doc.setTextColor(60, 60, 60); doc.setFontSize(9);
-  doc.text(`${stops.length} colis · ✅ ${done} · ⚠️ ${abs} · ❌ ${ech}${totalDistKm ? ` · 📏 ${totalDistKm} km` : ''}`, 14, 38);
-  doc.setDrawColor(220, 230, 245); doc.line(10, 42, 200, 42);
-
-  let y = 50;
-  doc.setFillColor(26, 86, 219); doc.rect(10, y - 6, 190, 9, 'F');
-  doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(8);
-  doc.text('#', 14, y); doc.text('DESTINATAIRE', 22, y); doc.text('ADRESSE', 72, y);
-  doc.text('CRÉNEAU', 132, y); doc.text('TYPE', 158, y); doc.text('STATUT', 176, y); y += 8;
-
-  stops.forEach((s, i) => {
-    if (y > 272) { doc.addPage(); y = 20; }
-    if (i % 2 === 0) { doc.setFillColor(245, 248, 255); doc.rect(10, y - 5, 190, 8, 'F'); }
-    doc.setTextColor(15, 27, 45); doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
-    doc.text(String(i + 1), 14, y);
-    doc.text(s.name.substring(0, 22), 22, y);
-    doc.text(s.addr.substring(0, 37), 72, y);
-    doc.text(s.slot || '—', 132, y);
-    doc.text(s.type === 'express' ? 'EXPRESS' : s.type === 'fragile' ? 'FRAGILE' : 'STD', 158, y);
-    const [sr, sg, sb] = s.status === 'livre' ? [13, 168, 116] : s.status === 'absent' ? [245, 158, 11] : s.status === 'echec' ? [229, 62, 62] : [100, 120, 150];
-    doc.setTextColor(sr, sg, sb); doc.setFont('helvetica', 'bold');
-    doc.text(s.status === 'livre' ? 'LIVRÉ' : s.status === 'absent' ? 'ABSENT' : s.status === 'echec' ? 'ÉCHEC' : 'EN ATTENTE', 176, y);
-    y += 9;
-  });
-  doc.setTextColor(150, 160, 180); doc.setFont('helvetica', 'normal'); doc.setFontSize(7);
-  doc.text('ChronoRoute v5 — OpenStreetMap · OSRM · jsPDF', 14, y + 10);
-  doc.save(`tournee_${new Date().toISOString().slice(0, 10)}.pdf`);
-  showToast('📄 PDF exporté !', 'ok');
-}
-
-// ══════════════════════════════════════
-//  MOBILE NAVIGATION
-// ══════════════════════════════════════
-const views = ['map', 'list', 'add', 'route'];
-function showView(name) {
-  views.forEach(v => {
-    document.getElementById(`view-${v}`).classList.toggle('active', v === name);
-    const btn = document.getElementById(`bn-${v}`);
-    if (btn) btn.classList.toggle('active', v === name);
-  });
-  // Invalider la carte si on revient dessus
-  if (name === 'map' && map) setTimeout(() => map.invalidateSize(), 60);
-}
-
-// ══════════════════════════════════════
-//  DESKTOP TABS
-// ══════════════════════════════════════
-function switchDesktopTab(tab) {
-  document.getElementById('dtabMap').classList.toggle('active', tab === 'map');
-  document.getElementById('dtabRoute').classList.toggle('active', tab === 'route');
-  document.getElementById('dMap').classList.toggle('hidden', tab !== 'map');
-  document.getElementById('dRoute').classList.toggle('hidden', tab !== 'route');
-  if (tab === 'map' && dmap) setTimeout(() => dmap.invalidateSize(), 60);
-}
-
-// ══════════════════════════════════════
-//  HELPERS
-// ══════════════════════════════════════
-function updateHeader() {
-  document.getElementById('hTotal').textContent = `📦 ${stops.length}`;
-  document.getElementById('hDone').textContent = `✅ ${stops.filter(s => s.status === 'livre').length}`;
-}
-function updateProgress() {
-  const t = stops.length, d = stops.filter(s => s.status === 'livre').length;
-  document.getElementById('progFill').style.width = t ? (d / t * 100) + '%' : '0%';
-}
-function setBtnsDisabled(v) {
-  document.getElementById('btnOpt').disabled = v;
-  document.getElementById('dBtnOpt').disabled = v;
-}
-function resetAll() {
-  if (!stops.length) return;
-  if (!confirm('Réinitialiser toute la tournée ?')) return;
-  stops = []; totalDistKm = 0; totalTimeMin = 0;
-  markers.forEach(m => m.remove()); markers = [];
-  dmarkers.forEach(m => m.remove()); dmarkers = [];
-  if (routeLine) { routeLine.remove(); routeLine = null; }
-  if (drouteLine) { drouteLine.remove(); drouteLine = null; }
-  renderAll(); updateHeader(); updateProgress();
-  showToast('🗑️ Réinitialisé', 'info');
-}
-function showLoading(t, s) { document.getElementById('loadT').textContent = t; document.getElementById('loadS').textContent = s; document.getElementById('loading').classList.remove('hidden'); }
-function updT(t) { document.getElementById('loadT').textContent = t; }
-function updS(s) { document.getElementById('loadS').textContent = s; }
-function hideLoading() { document.getElementById('loading').classList.add('hidden'); }
-function showToast(msg, type = 'info') {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.className = `toast ${type} show`;
-  clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 2800);
-}
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-// ══════════════════════════════════════
-//  INIT
-// ══════════════════════════════════════
-window.addEventListener('load', () => {
-  initMaps();
-  // Invalider les maps après chargement complet
-  setTimeout(() => { map.invalidateSize(); dmap.invalidateSize(); }, 200);
 });
+
+}
+
+function removeStop(i){
+
+stops.splice(i,1);
+
+save();
+render();
+}
+
+function navigate(adresse){
+
+let url=
+"https://www.google.com/maps/dir/?api=1&destination="
++encodeURIComponent(adresse);
+
+window.open(url);
+
+}
+
+function uploadPhoto(e,i){
+
+let file=e.target.files[0];
+
+let reader=new FileReader();
+
+reader.onload=function(evt){
+
+stops[i].photo=evt.target.result;
+
+save();
+
+};
+
+reader.readAsDataURL(file);
+
+}
+
+function saveSignature(i){
+
+let data=stops[i].pad.toDataURL();
+
+stops[i].signature=data;
+
+save();
+
+alert("Signature enregistrée");
+
+}
+
+document
+.getElementById("csvFile")
+.addEventListener("change",function(e){
+
+let file=e.target.files[0];
+
+let reader=new FileReader();
+
+reader.onload=function(evt){
+
+let lines=evt.target.result.split("\n");
+
+lines.forEach(line=>{
+
+let parts=line.split(",");
+
+if(parts[0]){
+
+stops.push({
+
+adresse:parts[0],
+client:parts[1]||"",
+tel:parts[2]||"",
+note:"",
+status:"pending"
+
+});
+
+}
+
+});
+
+save();
+render();
+
+};
+
+reader.readAsText(file);
+
+});
+
+function shareTour(){
+
+let data=btoa(JSON.stringify(stops));
+
+let url=
+location.origin+
+location.pathname+
+"?tour="+data;
+
+navigator.clipboard.writeText(url);
+
+alert("Lien copié");
+
+}
+
+function generateQR(){
+
+let data=btoa(JSON.stringify(stops));
+
+let url=
+location.origin+
+location.pathname+
+"?tour="+data;
+
+document.getElementById("qrcode").innerHTML="";
+
+new QRCode(
+document.getElementById("qrcode"),
+url
+);
+
+}
+
+function loadShared(){
+
+let params=
+new URLSearchParams(location.search);
+
+if(params.get("tour")){
+
+stops=
+JSON.parse(atob(params.get("tour")));
+
+save();
+}
+
+}
+
+loadShared();
+render();
+
 </script>
+
 </body>
 </html>
