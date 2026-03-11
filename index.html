@@ -869,12 +869,7 @@ transition:all .2s; display:flex; align-items:center; gap:6px; letter-spacing:.5
 
 <!-- ══ MOBILE VIEWS ══ -->
 
-<div class="view active" id="view-map">
-  <div id="map"></div>
-  <button class="btn-gps" onclick="centerGPS()">📍</button>
-</div>
-
-<div class="view" id="view-list">
+<div class="view active" id="view-list">
   <div class="view-inner" id="listInner">
     <div class="empty"><div class="empty-ico">📭</div><div class="empty-txt">Aucun arrêt ajouté.<br>Commence par ajouter un colis.</div></div>
   </div>
@@ -928,11 +923,11 @@ transition:all .2s; display:flex; align-items:center; gap:6px; letter-spacing:.5
 <!-- ══ BOTTOM NAV ══ -->
 
 <div class="bottom-nav">
-  <button class="bnav-btn active" id="bn-map"   onclick="showView('map')">  <span class="ico">🗺️</span>Carte</button>
-  <button class="bnav-btn"        id="bn-list"  onclick="showView('list')"> <span class="ico">📦</span>Colis</button>
+  <button class="bnav-btn active" id="bn-list"  onclick="showView('list')"> <span class="ico">📦</span>Colis</button>
   <button class="bnav-btn bnav-opt"              onclick="optimizeRoute()">  <div class="opt-wrap"><span class="opt-ico">⚡</span></div><span>Optimiser</span></button>
   <button class="bnav-btn"        id="bn-add"   onclick="showView('add')">  <span class="ico">➕</span>Ajouter</button>
   <button class="bnav-btn"        id="bn-route" onclick="showView('route')"><span class="ico">📋</span>Tournée</button>
+  <button class="bnav-btn"        id="bn-stats" onclick="showView('stats')"><span class="ico">📊</span>Stats</button>
 </div>
 
 <!-- ══ DESKTOP LAYOUT ══ -->
@@ -1504,13 +1499,12 @@ function exportPDF(){
 // ══════════════════════════════════════
 //  NAVIGATION
 // ══════════════════════════════════════
-const views=['map','list','add','route','stats'];
+const views=['list','add','route','stats'];
 function showView(name){
   views.forEach(v=>{
-    document.getElementById(`view-${v}`).classList.toggle('active',v===name);
-    const b=document.getElementById(`bn-${v}`);if(b)b.classList.toggle('active',v===name);
+    const el=document.getElementById(`view-${v}`); if(el) el.classList.toggle('active',v===name);
+    const b=document.getElementById(`bn-${v}`); if(b) b.classList.toggle('active',v===name);
   });
-  if(name==='map'&&map)setTimeout(()=>map.invalidateSize(),60);
 }
 function switchDesktopTab(tab){
   ['map','route','stats'].forEach(t=>{document.getElementById('dtab'+t.charAt(0).toUpperCase()+t.slice(1)).classList.toggle('active',t===tab);});
