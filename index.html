@@ -1,1053 +1,348 @@
 <!DOCTYPE html>
-
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#1A56DB">
-<title>ChronoRoute v6</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<title>ChronoRoute V8</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link rel="stylesheet"
+href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
 <style>
-:root {
-  --blue:#1A56DB; --blue-dk:#1342B0; --blue-lt:#EBF2FF; --blue-mid:#C7DCFF;
-  --bg:#F0F4FA; --surface:#FFFFFF; --border:#DDE5F0;
-  --text:#0F1B2D; --muted:#8FA3BE;
-  --yellow:#FFD100; --yellow-dk:#F0C200;
-  --ok:#0DA874; --warn:#F59E0B; --err:#E53E3E;
-  --waze:#33CCFF; --gmaps:#4285F4;
-  --r:12px; --sh:0 2px 12px rgba(26,86,219,.10); --sh-lg:0 8px 32px rgba(26,86,219,.15);
-  --safe-top:env(safe-area-inset-top,0px); --safe-bot:env(safe-area-inset-bottom,0px);
-  --safe-left:env(safe-area-inset-left,0px); --safe-right:env(safe-area-inset-right,0px);
-  --nav-h:62px; --header-h:54px;
+
+body{
+margin:0;
+font-family:Arial;
+background:#111;
+color:white;
 }
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
-html{height:100%;}
-body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);height:100%;overflow:hidden;position:fixed;width:100%;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
 
-/* ── HEADER ── */
-.header{position:fixed;top:0;left:0;right:0;z-index:200;height:calc(var(–header-h) + var(–safe-top));padding-top:var(–safe-top);background:var(–blue);display:flex;align-items:center;justify-content:space-between;padding-left:calc(16px + var(–safe-left));padding-right:calc(16px + var(–safe-right));box-shadow:0 2px 16px rgba(26,86,219,.3);}
-.logo{display:flex;align-items:center;gap:10px;}
-.logo-icon{width:30px;height:30px;background:var(–yellow);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;}
-.logo-text{font-size:16px;font-weight:700;color:#fff;}
-.logo-text em{font-style:normal;font-size:11px;font-weight:400;color:rgba(255,255,255,.5);margin-left:5px;}
-.hpills{display:flex;gap:6px;}
-.hpill{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);border-radius:16px;padding:3px 10px;font-size:11px;font-weight:600;color:#fff;}
-
-/* ── PROGRESS ── */
-.prog{position:fixed;top:calc(var(–header-h) + var(–safe-top));left:0;right:0;height:3px;background:var(–blue-mid);z-index:199;}
-.prog-fill{height:100%;background:linear-gradient(90deg,var(–yellow),var(–ok));transition:width .5s cubic-bezier(.4,0,.2,1);}
-
-/* ── BOTTOM NAV ── */
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:200;height:calc(var(–nav-h) + var(–safe-bot));padding-bottom:var(–safe-bot);background:var(–surface);border-top:1px solid var(–border);display:flex;box-shadow:0 -4px 20px rgba(26,86,219,.1);}
-.bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:transparent;border:none;font-family:‘DM Sans’,sans-serif;font-size:10px;font-weight:600;color:var(–muted);cursor:pointer;transition:color .2s;padding:0;}
-.bnav-btn .ico{font-size:22px;line-height:1;}
-.bnav-btn.active{color:var(–blue);}
-.bnav-btn.action .ico-wrap{width:44px;height:44px;background:var(–yellow);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 3px 12px rgba(255,209,0,.4);margin-bottom:2px;}
-.bnav-btn.action{color:var(–text);}
-
-/* ── VIEWS ── */
-.view{position:fixed;top:calc(var(–header-h) + var(–safe-top) + 3px);left:var(–safe-left);right:var(–safe-right);bottom:calc(var(–nav-h) + var(–safe-bot));overflow:hidden;display:none;}
-.view.active{display:flex;flex-direction:column;}
-
-/* ── MAP VIEW ── */
-#view-map{position:fixed;}
-#map{position:absolute;inset:0;}
-.btn-gps{position:absolute;bottom:20px;right:16px;z-index:500;width:48px;height:48px;border-radius:50%;background:var(–blue);color:#fff;border:none;font-size:20px;cursor:pointer;box-shadow:var(–sh-lg);display:flex;align-items:center;justify-content:center;}
-
-/* ── SCROLL VIEWS ── */
-#view-add,#view-list,#view-route,#view-stats{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
-.view-inner{padding:14px;padding-bottom:24px;display:flex;flex-direction:column;gap:12px;}
-
-/* ── FORM ── */
-.section-title{font-size:12px;font-weight:700;color:var(–blue);text-transform:uppercase;letter-spacing:1px;}
-.form-card{background:var(–surface);border:1.5px solid var(–border);border-radius:var(–r);padding:16px;box-shadow:var(–sh);}
-.fg{margin-bottom:12px;}.fg:last-child{margin-bottom:0;}
-.fg2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
-label{display:block;font-size:11px;font-weight:600;color:var(–muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px;}
-input,select,textarea{width:100%;background:var(–bg);border:1.5px solid var(–border);border-radius:9px;padding:12px 13px;font-family:‘DM Sans’,sans-serif;font-size:15px;color:var(–text);outline:none;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;appearance:none;}
-input:focus,select:focus,textarea:focus{border-color:var(–blue);box-shadow:0 0 0 3px rgba(26,86,219,.1);background:#fff;}
-input::placeholder,textarea::placeholder{color:var(–muted);}
-textarea{resize:none;min-height:72px;line-height:1.5;}
-
-/* ── BUTTONS ── */
-.btn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;padding:13px;border-radius:11px;font-family:‘DM Sans’,sans-serif;font-size:15px;font-weight:700;border:none;cursor:pointer;transition:all .18s cubic-bezier(.4,0,.2,1);}
-.btn-add{background:var(–blue);color:#fff;box-shadow:0 3px 12px rgba(26,86,219,.3);}
-.btn-add:active{transform:scale(.97);opacity:.9;}
-.btn-opt{background:var(–yellow);color:var(–text);box-shadow:0 3px 12px rgba(255,209,0,.35);}
-.btn-opt:active{transform:scale(.97);}
-.btn-opt:disabled{opacity:.4;cursor:not-allowed;transform:none;}
-.btn-pdf{background:var(–bg);color:var(–blue);border:1.5px solid var(–blue-mid);}
-.btn-share{background:var(–bg);color:#7C3AED;border:1.5px solid rgba(124,58,237,.2);}
-.btn-csv{background:var(–bg);color:var(–ok);border:1.5px solid rgba(13,168,116,.2);}
-.btn-reset{background:transparent;color:var(–muted);border:1.5px solid var(–border);font-size:13px;padding:11px;}
-.btn-reset:active{color:var(–err);border-color:var(–err);}
-.btn-sm{font-size:12px;padding:8px 12px;border-radius:8px;width:auto;}
-
-/* ── STOP CARD ── */
-.stop-card{background:var(–surface);border:1.5px solid var(–border);border-radius:var(–r);padding:13px 13px 12px;position:relative;overflow:hidden;animation:cardIn .25s cubic-bezier(.4,0,.2,1);box-shadow:var(–sh);}
-@keyframes cardIn{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
-.stop-card::before{content:’’;position:absolute;left:0;top:0;bottom:0;width:4px;background:var(–blue-mid);border-radius:3px 0 0 3px;transition:background .25s;}
-.stop-card.s-livre::before{background:var(–ok);}
-.stop-card.s-absent::before{background:var(–warn);}
-.stop-card.s-echec::before{background:var(–err);}
-.sc-row1{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
-.sc-num{width:28px;height:28px;border-radius:50%;background:var(–blue);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.sc-name{flex:1;font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.sc-actions-row{display:flex;gap:5px;flex-shrink:0;}
-.sc-icon-btn{background:transparent;border:none;padding:5px 6px;border-radius:7px;cursor:pointer;font-size:16px;line-height:1;transition:all .15s;color:var(–muted);}
-.sc-icon-btn:active{transform:scale(.9);}
-.sc-icon-btn.edit{color:var(–blue);}
-.sc-icon-btn.del{color:var(–muted);}
-.sc-icon-btn.del:active{color:var(–err);}
-.sc-addr{font-size:12px;color:var(–muted);margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.sc-note{font-size:12px;color:#7C3AED;background:rgba(124,58,237,.07);border-radius:7px;padding:6px 9px;margin-bottom:7px;border-left:3px solid rgba(124,58,237,.25);line-height:1.4;}
-.sc-tel{display:inline-flex;align-items:center;gap:5px;background:rgba(13,168,116,.08);color:var(–ok);border:1.5px solid rgba(13,168,116,.2);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;text-decoration:none;margin-bottom:7px;}
-.sc-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;}
-.tag{padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;}
-.t-express{background:rgba(229,62,62,.1);color:var(–err);}
-.t-fragile{background:rgba(139,92,246,.1);color:#7C3AED;}
-.t-standard{background:var(–bg);color:var(–muted);}
-.t-time{background:var(–blue-lt);color:var(–blue);}
-.t-livre{background:rgba(13,168,116,.12);color:var(–ok);}
-.t-absent{background:rgba(245,158,11,.12);color:var(–warn);}
-.t-echec{background:rgba(229,62,62,.12);color:var(–err);}
-.sc-status{display:flex;gap:6px;margin-bottom:9px;}
-.s-btn{flex:1;padding:9px 4px;border-radius:9px;font-family:‘DM Sans’,sans-serif;font-size:12px;font-weight:700;border:1.5px solid transparent;cursor:pointer;text-align:center;transition:all .15s;}
-.s-btn.livre{background:rgba(13,168,116,.08);color:var(–ok);border-color:rgba(13,168,116,.2);}
-.s-btn.absent{background:rgba(245,158,11,.08);color:var(–warn);border-color:rgba(245,158,11,.2);}
-.s-btn.echec{background:rgba(229,62,62,.08);color:var(–err);border-color:rgba(229,62,62,.2);}
-.s-btn.active{filter:brightness(1.2);box-shadow:0 2px 8px rgba(0,0,0,.1);}
-.s-btn:active{opacity:.75;}
-.sc-nav{display:flex;gap:7px;}
-.nav-btn{flex:1;padding:10px 8px;border-radius:9px;font-family:‘DM Sans’,sans-serif;font-size:13px;font-weight:700;border:none;cursor:pointer;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity .15s;}
-.nav-btn:active{opacity:.75;transform:scale(.97);}
-.nav-waze{background:var(–waze);color:#fff;}
-.nav-gmaps{background:var(–gmaps);color:#fff;}
-.nav-tel{background:var(–ok);color:#fff;}
-
-/* ── STATS ── */
-.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.stat-card{background:var(–surface);border:1.5px solid var(–border);border-radius:var(–r);padding:16px;text-align:center;box-shadow:var(–sh);}
-.stat-val{font-size:32px;font-weight:800;color:var(–blue);line-height:1;font-family:‘DM Mono’,monospace;}
-.stat-lbl{font-size:11px;font-weight:600;color:var(–muted);text-transform:uppercase;letter-spacing:.8px;margin-top:4px;}
-
-/* ── ROUTE PANEL ── */
-.info-bar{background:var(–blue);border-radius:var(–r);padding:13px 14px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;box-shadow:0 4px 16px rgba(26,86,219,.25);}
-.info-item{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:#fff;}
-.info-val{font-weight:700;font-size:15px;}
-.info-badge{background:var(–yellow);color:var(–text);padding:3px 10px;border-radius:16px;font-size:11px;font-weight:800;margin-left:auto;}
-.steps{display:flex;flex-direction:column;}
-.step{display:flex;gap:11px;padding-bottom:12px;position:relative;animation:stepIn .35s cubic-bezier(.4,0,.2,1) both;}
-@keyframes stepIn{from{opacity:0;transform:translateX(10px);}to{opacity:1;transform:translateX(0);}}
-.step:not(:last-child)::before{content:’’;position:absolute;left:14px;top:30px;width:2px;height:calc(100% - 14px);background:linear-gradient(180deg,var(–blue-mid),transparent);}
-.step-num{width:30px;height:30px;border-radius:50%;background:var(–blue);color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;z-index:1;box-shadow:0 2px 8px rgba(26,86,219,.3);transition:background .3s;}
-.step-num.done{background:var(–ok);}
-.step-num.warn{background:var(–warn);}
-.step-num.fail{background:var(–err);}
-.step-body{flex:1;background:var(–surface);border:1.5px solid var(–border);border-radius:var(–r);padding:11px 12px;box-shadow:var(–sh);}
-.step-name{font-weight:700;font-size:14px;margin-bottom:2px;}
-.step-addr{font-size:12px;color:var(–muted);margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.step-note{font-size:12px;color:#7C3AED;background:rgba(124,58,237,.07);border-radius:6px;padding:5px 8px;margin-bottom:6px;border-left:3px solid rgba(124,58,237,.2);}
-.step-meta{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;align-items:center;}
-.step-dist{font-size:11px;color:var(–blue);font-weight:600;background:var(–blue-lt);padding:2px 8px;border-radius:10px;}
-.step-nav{display:flex;gap:6px;}
-.step-nav a{flex:1;padding:9px 6px;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:5px;transition:opacity .15s;}
-.step-nav a:active{opacity:.75;}
-.snw{background:var(–waze);color:#fff;}
-.sng{background:var(–gmaps);color:#fff;}
-.snt{background:var(–ok);color:#fff;}
-
-/* ── EMPTY ── */
-.empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px;gap:10px;}
-.empty-ico{font-size:52px;opacity:.2;}
-.empty-txt{font-size:15px;font-weight:600;color:var(–muted);line-height:1.5;}
-
-/* ── MODAL ── */
-.modal-overlay{position:fixed;inset:0;z-index:900;background:rgba(15,27,45,.5);backdrop-filter:blur(6px);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s cubic-bezier(.4,0,.2,1);}
-.modal-overlay.open{opacity:1;pointer-events:all;}
-.modal-sheet{background:var(–surface);border-radius:20px 20px 0 0;width:100%;max-width:540px;padding:0 0 calc(16px + var(–safe-bot));box-shadow:0 -8px 40px rgba(26,86,219,.18);transform:translateY(40px);transition:transform .28s cubic-bezier(.4,0,.2,1);max-height:90vh;overflow-y:auto;}
-.modal-overlay.open .modal-sheet{transform:translateY(0);}
-.modal-handle{width:36px;height:4px;background:var(–border);border-radius:2px;margin:12px auto 0;}
-.modal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 10px;border-bottom:1px solid var(–border);position:sticky;top:0;background:var(–surface);z-index:1;}
-.modal-title{font-size:15px;font-weight:700;color:var(–text);}
-.modal-close{background:var(–bg);border:none;width:30px;height:30px;border-radius:50%;font-size:16px;cursor:pointer;color:var(–muted);display:flex;align-items:center;justify-content:center;}
-.modal-body{padding:16px 18px;display:flex;flex-direction:column;gap:12px;}
-.modal-footer{padding:0 18px;display:flex;gap:9px;}
-.btn-save{flex:1;background:var(–blue);color:#fff;padding:13px;border-radius:11px;font-family:‘DM Sans’,sans-serif;font-size:15px;font-weight:700;border:none;cursor:pointer;box-shadow:0 3px 12px rgba(26,86,219,.3);}
-.btn-save:active{opacity:.85;transform:scale(.97);}
-.btn-cancel{background:var(–bg);color:var(–muted);padding:13px 18px;border-radius:11px;font-family:‘DM Sans’,sans-serif;font-size:15px;font-weight:600;border:1.5px solid var(–border);cursor:pointer;}
-
-/* ── CSV MODAL ── */
-.csv-hint{font-size:12px;color:var(–muted);line-height:1.6;background:var(–bg);border-radius:8px;padding:10px 12px;border-left:3px solid var(–blue-mid);}
-.csv-hint code{font-family:‘DM Mono’,monospace;background:var(–blue-lt);color:var(–blue);padding:1px 5px;border-radius:4px;font-size:11px;}
-
-/* ── QR MODAL ── */
-#qrcode{display:flex;justify-content:center;padding:10px 0;}
-#qrcode canvas,#qrcode img{border-radius:10px;box-shadow:var(–sh);}
-.qr-hint{font-size:12px;color:var(–muted);text-align:center;line-height:1.5;}
-
-/* ── PHOTO MODAL ── */
-.photo-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
-.photo-thumb{width:100%;aspect-ratio:1;border-radius:10px;object-fit:cover;border:1.5px solid var(–border);}
-.photo-placeholder{width:100%;aspect-ratio:1;border-radius:10px;border:2px dashed var(–border);display:flex;align-items:center;justify-content:center;font-size:28px;color:var(–muted);cursor:pointer;background:var(–bg);}
-
-/* ── TOAST ── */
-.toast{position:fixed;bottom:calc(var(–nav-h) + var(–safe-bot) + 12px);left:50%;transform:translateX(-50%) translateY(40px);background:var(–text);color:#fff;padding:11px 20px;border-radius:24px;font-size:13px;font-weight:600;z-index:998;white-space:nowrap;opacity:0;transition:all .3s cubic-bezier(.4,0,.2,1);box-shadow:0 4px 20px rgba(0,0,0,.2);max-width:calc(100vw - 32px);text-align:center;}
-.toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
-.toast.ok{background:var(–ok);}
-.toast.err{background:var(–err);}
-.toast.info{background:var(–blue);}
-
-/* ── LOADING ── */
-.loading{position:fixed;inset:0;z-index:999;background:rgba(240,244,250,.92);backdrop-filter:blur(8px);display:flex;flex-direction:column;align-items:center;justify-content:center;}
-.loading.hidden{display:none;}
-.spinner{width:44px;height:44px;border:3px solid var(–blue-mid);border-top-color:var(–blue);border-radius:50%;animation:spin .75s linear infinite;margin-bottom:16px;}
-@keyframes spin{to{transform:rotate(360deg);}}
-.load-t{font-size:16px;font-weight:700;color:var(–blue);margin-bottom:5px;}
-.load-s{font-size:13px;color:var(–muted);}
-
-/* ── LEAFLET POPUP ── */
-.leaflet-popup-content-wrapper{border-radius:14px!important;box-shadow:var(–sh-lg)!important;border:1.5px solid var(–border)!important;font-family:‘DM Sans’,sans-serif!important;padding:0!important;}
-.leaflet-popup-content{margin:0!important;font-family:‘DM Sans’,sans-serif!important;}
-.leaflet-popup-tip{background:#fff!important;}
-.p-inner{padding:13px 14px;}
-.p-name{font-weight:700;font-size:14px;color:var(–text);margin-bottom:3px;}
-.p-addr{font-size:12px;color:var(–muted);margin-bottom:8px;}
-.p-nav{display:flex;gap:7px;}
-.p-nav a{flex:1;padding:9px;border-radius:8px;font-size:12px;font-weight:700;text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:5px;}
-.p-nav .pw{background:var(–waze);color:#fff;}
-.p-nav .pg{background:var(–gmaps);color:#fff;}
-.p-nav .pt{background:var(–ok);color:#fff;}
-
-/* ── DESKTOP ── */
-@media(min-width:768px){
-body{overflow:auto;position:static;}
-.header{position:fixed;height:var(–header-h);padding-top:0;}
-.prog{top:var(–header-h);}
-.bottom-nav{display:none;}
-.desktop-layout{position:fixed;top:calc(var(–header-h) + 3px);left:0;right:0;bottom:0;display:grid;grid-template-columns:360px 1fr;overflow:hidden;}
-.desktop-sidebar{background:var(–surface);border-right:1px solid var(–border);display:flex;flex-direction:column;overflow:hidden;}
-.dsb-top{padding:14px;border-bottom:1px solid var(–border);flex-shrink:0;}
-.dsb-list{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px;}
-.dsb-list::-webkit-scrollbar{width:4px;}
-.dsb-list::-webkit-scrollbar-thumb{background:var(–border);border-radius:4px;}
-.dsb-footer{padding:12px 14px;border-top:1px solid var(–border);display:flex;flex-direction:column;gap:7px;flex-shrink:0;}
-.desktop-main{display:flex;flex-direction:column;overflow:hidden;}
-.dtabs{display:flex;background:var(–surface);border-bottom:1px solid var(–border);flex-shrink:0;padding:0 4px;}
-.dtab{padding:11px 18px;font-size:13px;font-weight:600;cursor:pointer;color:var(–muted);border-bottom:2px solid transparent;transition:all .2s;display:flex;align-items:center;gap:6px;}
-.dtab.active{color:var(–blue);border-bottom-color:var(–blue);}
-.dmap{flex:1;position:relative;display:flex;flex-direction:column;}
-.dmap.hidden{display:none;}
-.dmap #dmap{flex:1;}
-.droute{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px;}
-.droute.hidden{display:none;}
-.droute::-webkit-scrollbar{width:4px;}
-.droute::-webkit-scrollbar-thumb{background:var(–border);border-radius:4px;}
-.dstats{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px;}
-.dstats.hidden{display:none;}
-.view,.bottom-nav{display:none!important;}
-.desktop-layout{display:grid;}
-.toast{bottom:20px;}
-.dsb-top input,.dsb-top select,.dsb-top textarea{font-size:13px;padding:8px 10px;}
-.dsb-top .btn{padding:9px;font-size:13px;}
-.modal-sheet{max-height:80vh;}
+header{
+background:#c40000;
+padding:15px;
+text-align:center;
+font-weight:bold;
 }
-@media(max-width:767px){.desktop-layout{display:none!important;}}
+
+#map{
+height:300px;
+}
+
+.container{
+padding:15px;
+}
+
+button{
+padding:10px;
+margin:5px;
+border:none;
+background:#c40000;
+color:white;
+border-radius:6px;
+}
+
+input,textarea{
+width:100%;
+padding:8px;
+margin-top:5px;
+margin-bottom:10px;
+}
+
+.stop{
+background:#1c1c1c;
+padding:10px;
+margin-bottom:10px;
+border-radius:6px;
+}
+
+.status-pending{color:orange}
+.status-delivered{color:lime}
+.status-failed{color:red}
+
+canvas{
+background:white;
+border-radius:4px;
+}
+
 </style>
 
 </head>
+
 <body>
 
-<!-- HEADER -->
+<header>
+ChronoRoute V8
+</header>
 
-<div class="header">
-  <div class="logo">
-    <div class="logo-icon">⚡</div>
-    <div class="logo-text">ChronoRoute <em>v6</em></div>
-  </div>
-  <div class="hpills">
-    <div class="hpill" id="hTotal">📦 0</div>
-    <div class="hpill" id="hDone">✅ 0</div>
-  </div>
-</div>
-<div class="prog"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+<div id="map"></div>
 
-<!-- ══ MOBILE VIEWS ══ -->
+<div class="container">
 
-<!-- CARTE -->
+<h3>Nouvelle livraison</h3>
 
-<div class="view active" id="view-map">
-  <div id="map"></div>
-  <button class="btn-gps" onclick="centerGPS()">📍</button>
-</div>
+<input id="adresse" placeholder="Adresse">
 
-<!-- LISTE COLIS -->
+<input id="client" placeholder="Client">
 
-<div class="view" id="view-list">
-  <div class="view-inner" id="listInner">
-    <div class="empty"><div class="empty-ico">📭</div><div class="empty-txt">Aucun arrêt ajouté</div></div>
-  </div>
-</div>
+<input id="tel" placeholder="Téléphone">
 
-<!-- AJOUTER -->
+<textarea id="note" placeholder="digicode, étage..."></textarea>
 
-<div class="view" id="view-add">
-  <div class="view-inner">
-    <div class="form-card">
-      <div class="section-title" style="margin-bottom:12px;">📦 Nouvel arrêt</div>
-      <div class="fg"><label>Destinataire</label><input id="inName" type="text" placeholder="M. Dupont" autocomplete="off" autocorrect="off" spellcheck="false"/></div>
-      <div class="fg"><label>Adresse complète</label><input id="inAddr" type="text" placeholder="12 rue de la Paix, Paris" autocomplete="off" autocorrect="off" spellcheck="false"/></div>
-      <div class="fg"><label>📞 Téléphone (optionnel)</label><input id="inTel" type="tel" placeholder="06 12 34 56 78"/></div>
-      <div class="fg2">
-        <div><label>Créneau</label>
-          <select id="inSlot"><option value="">Libre</option><option value="avant 10h">Avant 10h</option><option value="avant 12h">Avant 12h</option><option value="avant 13h">Avant 13h</option><option value="10h-14h">10h–14h</option><option value="14h-18h">14h–18h</option></select>
-        </div>
-        <div><label>Type</label>
-          <select id="inType"><option value="standard">Standard</option><option value="express">Express 10h</option><option value="fragile">Fragile</option></select>
-        </div>
-      </div>
-      <div class="fg"><label>📝 Notes (digicode, étage…)</label><textarea id="inNote" placeholder="Ex: Digicode 1234, 3ème étage droite"></textarea></div>
-      <button class="btn btn-add" onclick="addStop()">+ Ajouter le colis</button>
-    </div>
-    <div class="form-card">
-      <div class="section-title" style="margin-bottom:12px;">⚡ Actions</div>
-      <div style="display:flex;flex-direction:column;gap:9px;">
-        <button class="btn btn-opt" id="btnOpt" onclick="optimizeRoute()">⚡ Optimiser la tournée</button>
-        <button class="btn btn-csv" onclick="openModal('csvModal')">📋 Importer une liste CSV</button>
-        <button class="btn btn-share" onclick="shareRoute()">🔗 Partager / QR Code</button>
-        <button class="btn btn-pdf" onclick="exportPDF()">📄 Exporter PDF</button>
-        <button class="btn btn-reset" onclick="resetAll()">🗑️ Réinitialiser</button>
-      </div>
-    </div>
-  </div>
+<button onclick="addStop()">Ajouter</button>
+
+<hr>
+
+<button onclick="nextStop()">➡ arrêt suivant</button>
+
+<button onclick="shareTour()">Partager tournée</button>
+
+<hr>
+
+<h3>Tournée</h3>
+
+<div id="stops"></div>
+
 </div>
 
-<!-- TOURNÉE -->
-
-<div class="view" id="view-route">
-  <div class="view-inner" id="routeInner">
-    <div class="empty"><div class="empty-ico">🚐</div><div class="empty-txt">Ajoutez des arrêts<br>et optimisez la tournée</div></div>
-  </div>
-</div>
-
-<!-- STATS -->
-
-<div class="view" id="view-stats">
-  <div class="view-inner" id="statsInner">
-    <div class="empty"><div class="empty-ico">📊</div><div class="empty-txt">Aucune donnée<br>disponible</div></div>
-  </div>
-</div>
-
-<!-- BOTTOM NAV -->
-
-<div class="bottom-nav">
-  <button class="bnav-btn active" id="bn-map" onclick="showView('map')"><span class="ico">🗺️</span>Carte</button>
-  <button class="bnav-btn" id="bn-list" onclick="showView('list')"><span class="ico">📦</span>Colis</button>
-  <button class="bnav-btn action" id="bn-add" onclick="showView('add')"><div class="ico-wrap">➕</div><span>Ajouter</span></button>
-  <button class="bnav-btn" id="bn-route" onclick="showView('route')"><span class="ico">📋</span>Tournée</button>
-  <button class="bnav-btn" id="bn-stats" onclick="showView('stats')"><span class="ico">📊</span>Stats</button>
-</div>
-
-<!-- ══ DESKTOP LAYOUT ══ -->
-
-<div class="desktop-layout">
-  <div class="desktop-sidebar">
-    <div class="dsb-top">
-      <div class="section-title" style="margin-bottom:10px;">📦 Ajouter un arrêt</div>
-      <div class="fg"><label>Destinataire</label><input id="dinName" type="text" placeholder="M. Dupont" autocomplete="off"/></div>
-      <div class="fg"><label>Adresse</label><input id="dinAddr" type="text" placeholder="12 rue de la Paix, Paris" autocomplete="off"/></div>
-      <div class="fg"><label>Téléphone</label><input id="dinTel" type="tel" placeholder="06 12 34 56 78"/></div>
-      <div class="fg2">
-        <div><label>Créneau</label><select id="dinSlot"><option value="">Libre</option><option value="avant 10h">Avant 10h</option><option value="avant 12h">Avant 12h</option><option value="avant 13h">Avant 13h</option><option value="10h-14h">10h–14h</option><option value="14h-18h">14h–18h</option></select></div>
-        <div><label>Type</label><select id="dinType"><option value="standard">Standard</option><option value="express">Express 10h</option><option value="fragile">Fragile</option></select></div>
-      </div>
-      <div class="fg"><label>Notes</label><textarea id="dinNote" placeholder="Digicode, étage…" style="min-height:52px;"></textarea></div>
-      <button class="btn btn-add" onclick="addStopDesktop()" style="font-size:13px;padding:9px;">+ Ajouter</button>
-    </div>
-    <div class="dsb-list" id="dSidebarList"><div class="empty"><div class="empty-ico" style="font-size:36px;">📭</div><div class="empty-txt" style="font-size:13px;">Aucun arrêt</div></div></div>
-    <div class="dsb-footer">
-      <button class="btn btn-opt" id="dBtnOpt" onclick="optimizeRoute()" style="font-size:13px;padding:10px;">⚡ Optimiser</button>
-      <div style="display:flex;gap:7px;">
-        <button class="btn btn-csv" onclick="openModal('csvModal')" style="font-size:12px;padding:9px;">📋 CSV</button>
-        <button class="btn btn-share" onclick="shareRoute()" style="font-size:12px;padding:9px;">🔗 Partager</button>
-        <button class="btn btn-pdf" onclick="exportPDF()" style="font-size:12px;padding:9px;">📄 PDF</button>
-      </div>
-      <button class="btn btn-reset" onclick="resetAll()" style="font-size:12px;padding:8px;">🗑️ Réinitialiser</button>
-    </div>
-  </div>
-  <div class="desktop-main">
-    <div class="dtabs">
-      <div class="dtab active" id="dtabMap" onclick="switchDesktopTab('map')">🗺️ Carte</div>
-      <div class="dtab" id="dtabRoute" onclick="switchDesktopTab('route')">📋 Tournée</div>
-      <div class="dtab" id="dtabStats" onclick="switchDesktopTab('stats')">📊 Stats</div>
-    </div>
-    <div class="dmap" id="dMap"><div id="dmap" style="flex:1;min-height:0;"></div><button class="btn-gps" onclick="centerGPS()" style="bottom:16px;right:16px;">📍</button></div>
-    <div class="droute hidden" id="dRoute"></div>
-    <div class="dstats hidden" id="dStats"></div>
-  </div>
-</div>
-
-<!-- ══ MODALES ══ -->
-
-<!-- ÉDITION -->
-
-<div class="modal-overlay" id="editModal" onclick="overlayClose(event,'editModal')">
-  <div class="modal-sheet">
-    <div class="modal-handle"></div>
-    <div class="modal-header">
-      <div class="modal-title">✏️ Modifier l'arrêt</div>
-      <button class="modal-close" onclick="closeModal('editModal')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="fg"><label>Destinataire</label><input id="editName" type="text" autocomplete="off" autocorrect="off" spellcheck="false"/></div>
-      <div class="fg"><label>Adresse complète</label><input id="editAddr" type="text" autocomplete="off" autocorrect="off" spellcheck="false"/></div>
-      <div class="fg"><label>📞 Téléphone</label><input id="editTel" type="tel" placeholder="06 12 34 56 78"/></div>
-      <div class="fg2">
-        <div><label>Créneau</label><select id="editSlot"><option value="">Libre</option><option value="avant 10h">Avant 10h</option><option value="avant 12h">Avant 12h</option><option value="avant 13h">Avant 13h</option><option value="10h-14h">10h–14h</option><option value="14h-18h">14h–18h</option></select></div>
-        <div><label>Type</label><select id="editType"><option value="standard">Standard</option><option value="express">Express 10h</option><option value="fragile">Fragile</option></select></div>
-      </div>
-      <div class="fg"><label>📝 Notes</label><textarea id="editNote" placeholder="Digicode, étage, instructions…"></textarea></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeModal('editModal')">Annuler</button>
-      <button class="btn-save" onclick="saveEdit()">✅ Enregistrer</button>
-    </div>
-  </div>
-</div>
-
-<!-- CSV IMPORT -->
-
-<div class="modal-overlay" id="csvModal" onclick="overlayClose(event,'csvModal')">
-  <div class="modal-sheet">
-    <div class="modal-handle"></div>
-    <div class="modal-header">
-      <div class="modal-title">📋 Importer une liste</div>
-      <button class="modal-close" onclick="closeModal('csvModal')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="csv-hint">
-        Colle ta liste — une ligne par colis :<br><br>
-        <code>Nom ; Adresse ; Téléphone ; Créneau ; Type ; Notes</code><br><br>
-        Exemple :<br>
-        <code>M. Dupont ; 12 rue de la Paix Paris ; 0612345678 ; avant 10h ; express ; Digicode 1234</code><br><br>
-        Seuls <strong>Nom</strong> et <strong>Adresse</strong> sont obligatoires.
-      </div>
-      <div class="fg"><label>Coller la liste ici</label><textarea id="csvText" placeholder="M. Dupont ; 12 rue de la Paix Paris&#10;Mme Martin ; 5 avenue Victor Hugo Paris" style="min-height:140px;font-size:13px;"></textarea></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeModal('csvModal')">Annuler</button>
-      <button class="btn-save" onclick="importCSV()">📥 Importer</button>
-    </div>
-  </div>
-</div>
-
-<!-- QR CODE / PARTAGE -->
-
-<div class="modal-overlay" id="qrModal" onclick="overlayClose(event,'qrModal')">
-  <div class="modal-sheet">
-    <div class="modal-handle"></div>
-    <div class="modal-header">
-      <div class="modal-title">🔗 Partager la tournée</div>
-      <button class="modal-close" onclick="closeModal('qrModal')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div id="qrcode"></div>
-      <p class="qr-hint">Scanne ce QR code pour ouvrir la tournée sur un autre appareil.<br>Ou copie le lien ci-dessous.</p>
-      <div style="display:flex;gap:8px;">
-        <input id="shareUrl" type="text" readonly style="font-size:12px;padding:10px;color:var(--muted);" onclick="this.select()"/>
-        <button class="btn btn-add btn-sm" onclick="copyShareUrl()" style="width:auto;flex-shrink:0;">Copier</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- LOADING -->
-
-<div class="loading hidden" id="loading">
-  <div class="spinner"></div>
-  <div class="load-t" id="loadT">Géocodage…</div>
-  <div class="load-s" id="loadS">Localisation des adresses</div>
-</div>
-
-<div class="toast" id="toast"></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
 
 <script>
-// ══════════════════════════════════════
-//  STATE & PERSISTENCE
-// ══════════════════════════════════════
-let stops = [];
-let map = null, dmap = null;
-let markers = [], dmarkers = [];
-let routeLine = null, drouteLine = null;
-let totalDistKm = 0, totalTimeMin = 0;
-let gpsMarker = null;
-let editingId = null;
-const isDesktop = () => window.innerWidth >= 768;
-const SAVE_KEY = 'chronoroute_v6';
 
-function saveToStorage() {
-  try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ stops, totalDistKm, totalTimeMin, ts: Date.now() }));
-  } catch(e) {}
-}
+const SAVE_KEY="chronoroute_v8"
 
-function loadFromStorage() {
-  try {
-    const d = localStorage.getItem(SAVE_KEY);
-    if (!d) return;
-    const parsed = JSON.parse(d);
-    // Données de moins de 24h seulement
-    if (Date.now() - parsed.ts > 86400000) return;
-    stops = parsed.stops || [];
-    totalDistKm = parsed.totalDistKm || 0;
-    totalTimeMin = parsed.totalTimeMin || 0;
-    if (stops.length) {
-      renderAll(); updateHeader(); updateProgress();
-      showToast(`💾 Tournée restaurée — ${stops.length} arrêt${stops.length>1?'s':''}`, 'ok');
-    }
-  } catch(e) {}
+let stops=JSON.parse(localStorage.getItem(SAVE_KEY))||[]
+
+const geoCache={}
+
+let map=L.map('map').setView([48.8566,2.35],11)
+
+L.tileLayer(
+'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+).addTo(map)
+
+let markerLayer=L.layerGroup().addTo(map)
+
+function save(){
+localStorage.setItem(SAVE_KEY,JSON.stringify(stops))
 }
 
-// ══════════════════════════════════════
-//  MAPS
-// ══════════════════════════════════════
-function initMaps() {
-  map = L.map('map', { zoomControl:false, attributionControl:false }).setView([48.8566,2.3522],12);
-  L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(map);
-  dmap = L.map('dmap', { zoomControl:false, attributionControl:false }).setView([48.8566,2.3522],12);
-  L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(dmap);
-  L.control.zoom({ position:'topright' }).addTo(dmap);
+function addStop(){
+
+let stop={
+adresse:adresse.value,
+client:client.value,
+tel:tel.value,
+note:note.value,
+status:"pending"
 }
 
-function centerGPS() {
-  if (!navigator.geolocation) { showToast('❌ GPS non disponible','err'); return; }
-  showToast('📡 Localisation…','info');
-  navigator.geolocation.getCurrentPosition(pos => {
-    const { latitude:lat, longitude:lng } = pos.coords;
-    const m = isDesktop() ? dmap : map;
-    m.setView([lat,lng],15);
-    if (gpsMarker) gpsMarker.remove();
-    const icon = L.divIcon({ className:'', html:`<div style="width:16px;height:16px;border-radius:50%;background:#1A56DB;border:3px solid #fff;box-shadow:0 0 0 4px rgba(26,86,219,.25);"></div>`, iconSize:[16,16], iconAnchor:[8,8] });
-    gpsMarker = L.marker([lat,lng],{icon}).addTo(m).bindPopup('📍 Votre position').openPopup();
-    showToast('📍 Position trouvée','ok');
-  }, () => showToast('❌ Position refusée','err'));
+stops.push(stop)
+
+save()
+
+render()
+
+adresse.value=""
+client.value=""
+tel.value=""
+note.value=""
+
 }
 
-// ══════════════════════════════════════
-//  NAV URLS
-// ══════════════════════════════════════
-const wazeUrl = (addr,c) => c ? `https://waze.com/ul?ll=${c.lat},${c.lon}&navigate=yes` : `https://waze.com/ul?q=${encodeURIComponent(addr)}&navigate=yes`;
-const gmapsUrl = (addr,c) => c ? `https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lon}&travelmode=driving` : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}&travelmode=driving`;
-const telUrl = tel => `tel:${tel.replace(/\s/g,'')}`;
+function render(){
 
-// ══════════════════════════════════════
-//  API
-// ══════════════════════════════════════
-async function geocode(addr) {
-  const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addr)}&limit=1`,{headers:{'Accept-Language':'fr'}});
-  const d = await r.json();
-  if (!d.length) return null;
-  return { lat:parseFloat(d[0].lat), lon:parseFloat(d[0].lon) };
-}
-async function getMatrix(coords) {
-  const s = coords.map(c=>`${c.lon},${c.lat}`).join(';');
-  return (await fetch(`https://router.project-osrm.org/table/v1/driving/${s}?annotations=duration,distance`)).json();
-}
-async function getRoute(coords) {
-  const s = coords.map(c=>`${c.lon},${c.lat}`).join(';');
-  return (await fetch(`https://router.project-osrm.org/route/v1/driving/${s}?overview=full&geometries=geojson`)).json();
-}
-function tsp(mx,n) {
-  const vis = new Array(n).fill(false);
-  const tour = [0]; vis[0]=true;
-  for (let i=1;i<n;i++) {
-    const last = tour[tour.length-1];
-    let best=-1, bestD=Infinity;
-    for (let j=0;j<n;j++) if (!vis[j]&&mx[last][j]<bestD){bestD=mx[last][j];best=j;}
-    vis[best]=true; tour.push(best);
-  }
-  return tour;
-}
+markerLayer.clearLayers()
 
-// ══════════════════════════════════════
-//  ADD STOP
-// ══════════════════════════════════════
-function collectForm(p='') {
-  return {
-    name: document.getElementById(p+'inName').value.trim(),
-    addr: document.getElementById(p+'inAddr').value.trim(),
-    tel:  document.getElementById(p+'inTel').value.trim(),
-    slot: document.getElementById(p+'inSlot').value,
-    type: document.getElementById(p+'inType').value,
-    note: document.getElementById(p+'inNote').value.trim(),
-  };
-}
-function clearForm(p='') {
-  ['inName','inAddr','inTel','inSlot','inNote'].forEach(id => document.getElementById(p+id).value='');
-  document.getElementById(p+'inType').value='standard';
-}
-function addStop()        { doAdd(collectForm());  clearForm();  }
-function addStopDesktop() { doAdd(collectForm('d')); clearForm('d'); }
+const container=document.getElementById("stops")
 
-function doAdd({name,addr,tel,slot,type,note}) {
-  if (!name||!addr) { showToast('⚠️ Nom et adresse requis','err'); return; }
-  stops.push({ id:Date.now(), name, addr, tel, slot, type, note, status:null, coords:null });
-  renderAll(); updateHeader(); saveToStorage();
-  showToast(`📦 ${name} ajouté(e)`,'ok');
-  if (!isDesktop()) showView('list');
-}
+container.innerHTML=""
 
-// ══════════════════════════════════════
-//  IMPORT CSV
-// ══════════════════════════════════════
-function importCSV() {
-  const raw = document.getElementById('csvText').value.trim();
-  if (!raw) { showToast('⚠️ Liste vide','err'); return; }
-  const lines = raw.split('\n').filter(l=>l.trim());
-  let added = 0;
-  lines.forEach(line => {
-    const parts = line.split(';').map(p=>p.trim());
-    const [name='', addr='', tel='', slot='', type='standard', note=''] = parts;
-    if (!name || !addr) return;
-    stops.push({ id:Date.now()+Math.random(), name, addr, tel, slot, type:['standard','express','fragile'].includes(type)?type:'standard', note, status:null, coords:null });
-    added++;
-  });
-  if (!added) { showToast('⚠️ Aucune ligne valide','err'); return; }
-  document.getElementById('csvText').value='';
-  closeModal('csvModal');
-  renderAll(); updateHeader(); saveToStorage();
-  showToast(`📥 ${added} colis importé${added>1?'s':''}`, 'ok');
-  if (!isDesktop()) showView('list');
+stops.forEach((s,i)=>{
+
+let div=document.createElement("div")
+div.className="stop"
+
+div.innerHTML=`
+
+<b>${s.client}</b><br>
+
+${s.adresse}<br>
+
+${s.note}<br>
+
+<span class="status-${s.status}">
+${s.status}
+</span>
+
+<br><br>
+
+<a href="tel:${s.tel}">
+<button>📞 appeler</button>
+</a>
+
+<button onclick="navigate('${s.adresse}')">
+🧭 navigation
+</button>
+
+<button onclick="markDelivered(${i})">
+✅ livré
+</button>
+
+<button onclick="markFailed(${i})">
+❌ échec
+</button>
+
+<input type="file" accept="image/*"
+onchange="uploadPhoto(event,${i})">
+
+<canvas id="sig${i}" width="300" height="100"></canvas>
+
+<button onclick="saveSignature(${i})">
+✍️ signature
+</button>
+
+`
+
+container.appendChild(div)
+
+let canvas=document.getElementById("sig"+i)
+
+let pad=new SignaturePad(canvas)
+
+s.pad=pad
+
+geocodeAndMarker(s)
+
+})
+
 }
 
-// ══════════════════════════════════════
-//  OPTIMIZE
-// ══════════════════════════════════════
-async function optimizeRoute() {
-  if (stops.length<2) { showToast('⚠️ Minimum 2 arrêts','err'); return; }
-  const pri={express:0,fragile:1,standard:2};
-  const slo={'avant 10h':0,'avant 12h':1,'avant 13h':2,'10h-14h':3,'14h-18h':4,'':5};
-  stops.sort((a,b)=>{const dp=pri[a.type]-pri[b.type];if(dp)return dp;return(slo[a.slot]??5)-(slo[b.slot]??5);});
-  setBtnsDisabled(true);
-  showLoading('Géocodage des adresses',`0 / ${stops.length}`);
-  try {
-    for (let i=0;i<stops.length;i++) {
-      updS(`Adresse ${i+1}/${stops.length} : ${stops[i].name}`);
-      if (!stops[i].coords) {
-        const geo = await geocode(stops[i].addr);
-        if (!geo) { showToast(`❌ Introuvable : ${stops[i].addr}`,'err'); hideLoading(); setBtnsDisabled(false); return; }
-        stops[i].coords = geo;
-      }
-      await sleep(300);
-    }
-    updT('Calcul distances'); updS('OSRM…');
-    const mx = await getMatrix(stops.map(s=>s.coords));
-    updT('Optimisation'); updS('TSP…');
-    const tour = tsp(mx.durations, stops.length);
-    stops = tour.map((idx,i)=>({...stops[idx],order:i+1}));
-    updT('Tracé itinéraire'); updS('Récupération…');
-    const rd = await getRoute(stops.map(s=>s.coords));
-    totalDistKm = (rd.routes[0].distance/1000).toFixed(1);
-    totalTimeMin = Math.round(rd.routes[0].duration/60);
-    const legs = rd.routes[0].legs;
-    stops.forEach((s,i)=>{ s.distFromPrev=i===0?0:(legs[i-1].distance/1000).toFixed(2); s.timeFromPrev=i===0?0:Math.round(legs[i-1].duration/60); });
-    drawMaps(rd.routes[0].geometry.coordinates);
-    hideLoading();
-    renderAll(); updateHeader(); updateProgress(); saveToStorage();
-    showToast(`⚡ ${totalDistKm} km · ${totalTimeMin} min`,'ok');
-    if (!isDesktop()) showView('route');
-    else switchDesktopTab('route');
-  } catch(e) {
-    console.error(e); hideLoading();
-    showToast('❌ Erreur réseau','err');
-  }
-  setBtnsDisabled(false);
+async function geocodeAndMarker(stop){
+
+if(geoCache[stop.adresse]){
+
+addMarker(geoCache[stop.adresse])
+
+return
+
 }
 
-// ══════════════════════════════════════
-//  MAP DRAW
-// ══════════════════════════════════════
-function stopColor(s) {
-  if (s.status==='livre') return {bg:'#0DA874',fg:'#fff'};
-  if (s.status==='absent') return {bg:'#F59E0B',fg:'#fff'};
-  if (s.status==='echec') return {bg:'#E53E3E',fg:'#fff'};
-  return {bg:'#1A56DB',fg:'#fff'};
-}
-function makeMarkerIcon(s,i) {
-  const {bg,fg} = stopColor(s);
-  return L.divIcon({ className:'', html:`<div style="width:40px;height:40px;border-radius:50%;background:${bg};color:${fg};font-family:'DM Sans',sans-serif;font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;border:3px solid #fff;box-shadow:0 3px 12px rgba(0,0,0,.2);">${i+1}</div>`, iconSize:[40,40], iconAnchor:[20,20], popupAnchor:[0,-24] });
-}
-function popupHTML(s) {
-  const telBtn = s.tel ? `<a href="${telUrl(s.tel)}" class="pt">📞</a>` : '';
-  return `<div class="p-inner"><div class="p-name">${s.name}</div><div class="p-addr">📍 ${s.addr}</div>${s.note?`<div style="font-size:11px;color:#7C3AED;margin-bottom:8px;">📝 ${s.note}</div>`:''}<div class="p-nav"><a href="${wazeUrl(s.addr,s.coords)}" target="_blank" class="pw">🚗</a><a href="${gmapsUrl(s.addr,s.coords)}" target="_blank" class="pg">🗺️</a>${telBtn}</div></div>`;
-}
-function addMarkersToMap(m, arr) {
-  stops.forEach((s,i)=>{ if(!s.coords)return; arr.push(L.marker([s.coords.lat,s.coords.lon],{icon:makeMarkerIcon(s,i)}).addTo(m).bindPopup(popupHTML(s),{maxWidth:220})); });
-}
-function drawMaps(geoCoords) {
-  markers.forEach(m=>m.remove()); markers=[];
-  dmarkers.forEach(m=>m.remove()); dmarkers=[];
-  if (routeLine){routeLine.remove();routeLine=null;}
-  if (drouteLine){drouteLine.remove();drouteLine=null;}
-  const ll = geoCoords.map(c=>[c[1],c[0]]);
-  routeLine = L.polyline(ll,{color:'#1A56DB',weight:5,opacity:.75}).addTo(map);
-  drouteLine = L.polyline(ll,{color:'#1A56DB',weight:5,opacity:.75}).addTo(dmap);
-  addMarkersToMap(map,markers);
-  addMarkersToMap(dmap,dmarkers);
-  map.fitBounds(routeLine.getBounds(),{padding:[32,32]});
-  dmap.fitBounds(drouteLine.getBounds(),{padding:[32,32]});
-}
-function refreshMarkers() {
-  markers.forEach(m=>m.remove()); markers=[];
-  dmarkers.forEach(m=>m.remove()); dmarkers=[];
-  if (stops.some(s=>s.coords)) { addMarkersToMap(map,markers); addMarkersToMap(dmap,dmarkers); }
+let url="https://nominatim.openstreetmap.org/search?format=json&q="+encodeURIComponent(stop.adresse)
+
+let r=await fetch(url)
+
+let data=await r.json()
+
+if(data.length){
+
+let lat=data[0].lat
+let lon=data[0].lon
+
+geoCache[stop.adresse]=[lat,lon]
+
+addMarker([lat,lon])
+
 }
 
-// ══════════════════════════════════════
-//  RENDER
-// ══════════════════════════════════════
-function stopCardHTML(s,i) {
-  const sc = s.status?`s-${s.status}`:'';
-  const tb = s.type==='express'?'<span class="tag t-express">EXPRESS</span>':s.type==='fragile'?'<span class="tag t-fragile">FRAGILE</span>':'<span class="tag t-standard">STD</span>';
-  const slb = s.slot?`<span class="tag t-time">🕐 ${s.slot}</span>`:'';
-  const stb = s.status?`<span class="tag t-${s.status}">${s.status==='livre'?'✅ Livré':s.status==='absent'?'⚠️ Absent':'❌ Échec'}</span>`:'';
-  const noteHTML = s.note?`<div class="sc-note">📝 ${s.note}</div>`:'';
-  const telHTML = s.tel?`<a href="${telUrl(s.tel)}" class="sc-tel">📞 ${s.tel}</a>`:'';
-  const navTel = s.tel?`<a href="${telUrl(s.tel)}" class="nav-btn nav-tel">📞 Appeler</a>`:'';
-  return `<div class="stop-card ${sc}">
-    <div class="sc-row1">
-      <div class="sc-num">${i+1}</div>
-      <div class="sc-name">${s.name}</div>
-      <div class="sc-actions-row">
-        <button class="sc-icon-btn edit" onclick="openEdit(${s.id})" title="Modifier">✏️</button>
-        <button class="sc-icon-btn del" onclick="removeStop(${s.id})" title="Supprimer">✕</button>
-      </div>
-    </div>
-    <div class="sc-addr">📍 ${s.addr}</div>
-    ${noteHTML}${telHTML}
-    <div class="sc-tags">${tb}${slb}${stb}</div>
-    <div class="sc-status">
-      <button class="s-btn livre ${s.status==='livre'?'active':''}" onclick="setStatus(${s.id},'livre')">✅ Livré</button>
-      <button class="s-btn absent ${s.status==='absent'?'active':''}" onclick="setStatus(${s.id},'absent')">⚠️ Absent</button>
-      <button class="s-btn echec ${s.status==='echec'?'active':''}" onclick="setStatus(${s.id},'echec')">❌ Échec</button>
-    </div>
-    <div class="sc-nav">
-      <a href="${wazeUrl(s.addr,s.coords)}" target="_blank" class="nav-btn nav-waze">🚗 Waze</a>
-      <a href="${gmapsUrl(s.addr,s.coords)}" target="_blank" class="nav-btn nav-gmaps">🗺️ Maps</a>
-      ${navTel}
-    </div>
-  </div>`;
 }
 
-function renderAll() {
-  renderMobileList(); renderDesktopSidebar();
-  renderMobileRoute(); renderDesktopRoute();
-  renderStats();
+function addMarker(coords){
+
+L.marker(coords).addTo(markerLayer)
+
 }
 
-function renderMobileList() {
-  const el = document.getElementById('listInner');
-  if (!stops.length) { el.innerHTML='<div class="empty"><div class="empty-ico">📭</div><div class="empty-txt">Aucun arrêt ajouté</div></div>'; return; }
-  el.innerHTML = `<div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;">${stops.length} arrêt${stops.length>1?'s':''}</div>` + stops.map((s,i)=>stopCardHTML(s,i)).join('');
+function navigate(adresse){
+
+let url="https://www.google.com/maps/dir/?api=1&destination="+encodeURIComponent(adresse)
+
+window.open(url)
+
 }
 
-function renderDesktopSidebar() {
-  const el = document.getElementById('dSidebarList');
-  if (!stops.length) { el.innerHTML='<div class="empty"><div class="empty-ico" style="font-size:36px;">📭</div><div class="empty-txt" style="font-size:13px;">Aucun arrêt</div></div>'; return; }
-  el.innerHTML = stops.map((s,i)=>stopCardHTML(s,i)).join('');
+function markDelivered(i){
+
+stops[i].status="delivered"
+
+save()
+
+render()
+
 }
 
-function routeHTML() {
-  if (!stops.length) return '<div class="empty"><div class="empty-ico">🚐</div><div class="empty-txt">Ajoutez des arrêts<br>et optimisez</div></div>';
-  const done=stops.filter(s=>s.status==='livre').length, abs=stops.filter(s=>s.status==='absent').length, ech=stops.filter(s=>s.status==='echec').length, rem=stops.filter(s=>!s.status).length;
-  let html=`<div class="stats-grid">
-    <div class="stat-card"><div class="stat-val" style="color:var(--ok)">${done}</div><div class="stat-lbl">Livrés</div></div>
-    <div class="stat-card"><div class="stat-val" style="color:var(--warn)">${abs}</div><div class="stat-lbl">Absents</div></div>
-    <div class="stat-card"><div class="stat-val" style="color:var(--err)">${ech}</div><div class="stat-lbl">Échecs</div></div>
-    <div class="stat-card"><div class="stat-val" style="color:var(--blue)">${rem}</div><div class="stat-lbl">Restants</div></div>
-  </div>`;
-  if (totalDistKm) html+=`<div class="info-bar"><div class="info-item">📏 <span class="info-val">${totalDistKm} km</span></div><div class="info-item">⏱️ <span class="info-val">${totalTimeMin} min</span></div><div class="info-badge">⚡ GPS OPTIMISÉ</div></div>`;
-  html+='<div class="steps">';
-  stops.forEach((s,i)=>{
-    const nc=s.status==='livre'?'done':s.status==='absent'?'warn':s.status==='echec'?'fail':'';
-    const tb=s.type==='express'?'<span class="tag t-express">EXPRESS</span>':s.type==='fragile'?'<span class="tag t-fragile">FRAGILE</span>':'';
-    const slb=s.slot?`<span class="tag t-time">🕐 ${s.slot}</span>`:'';
-    const stb=s.status?`<span class="tag t-${s.status}">${s.status==='livre'?'✅ Livré':s.status==='absent'?'⚠️ Absent':'❌ Échec'}</span>`:`<span class="tag" style="background:var(--blue-lt);color:var(--blue);">🔄 En attente</span>`;
-    const dist=s.distFromPrev>0?`<span class="step-dist">+${s.distFromPrev} km · ${s.timeFromPrev} min</span>`:i===0?'<span class="step-dist">🏁 Départ</span>':'';
-    const noteHTML=s.note?`<div class="step-note">📝 ${s.note}</div>`:'';
-    const telLink=s.tel?`<a href="${telUrl(s.tel)}" class="snt">📞</a>`:'';
-    html+=`<div class="step" style="animation-delay:${i*40}ms">
-      <div class="step-num ${nc}">${i+1}</div>
-      <div class="step-body">
-        <div class="step-name">${s.name}</div>
-        <div class="step-addr">📍 ${s.addr}</div>
-        ${noteHTML}
-        <div class="step-meta">${tb}${slb}${stb}${dist}</div>
-        <div class="step-nav">
-          <a href="${wazeUrl(s.addr,s.coords)}" target="_blank" class="snw">🚗 Waze</a>
-          <a href="${gmapsUrl(s.addr,s.coords)}" target="_blank" class="sng">🗺️ Maps</a>
-          ${telLink}
-        </div>
-      </div>
-    </div>`;
-  });
-  html+='</div>';
-  return html;
+function markFailed(i){
+
+stops[i].status="failed"
+
+save()
+
+render()
+
 }
 
-function renderMobileRoute() { document.getElementById('routeInner').innerHTML = routeHTML(); }
-function renderDesktopRoute() { document.getElementById('dRoute').innerHTML = routeHTML(); }
+function uploadPhoto(e,i){
 
-function statsHTML() {
-  const total = stops.length;
-  if (!total) return '<div class="empty"><div class="empty-ico">📊</div><div class="empty-txt">Aucune donnée</div></div>';
-  const done = stops.filter(s=>s.status==='livre').length;
-  const abs = stops.filter(s=>s.status==='absent').length;
-  const ech = stops.filter(s=>s.status==='echec').length;
-  const pct = total ? Math.round(done/total*100) : 0;
-  const express = stops.filter(s=>s.type==='express').length;
-  const fragile = stops.filter(s=>s.type==='fragile').length;
-  return `
-    <div class="form-card">
-      <div class="section-title" style="margin-bottom:12px;">📊 Tableau de bord</div>
-      <div class="stats-grid">
-        <div class="stat-card"><div class="stat-val">${total}</div><div class="stat-lbl">Total colis</div></div>
-        <div class="stat-card"><div class="stat-val" style="color:var(--ok)">${done}</div><div class="stat-lbl">Livrés</div></div>
-        <div class="stat-card"><div class="stat-val" style="color:var(--warn)">${abs}</div><div class="stat-lbl">Absents</div></div>
-        <div class="stat-card"><div class="stat-val" style="color:var(--err)">${ech}</div><div class="stat-lbl">Échecs</div></div>
-      </div>
-    </div>
-    <div class="form-card">
-      <div class="section-title" style="margin-bottom:12px;">🎯 Taux de livraison</div>
-      <div style="text-align:center;margin-bottom:12px;">
-        <div style="font-size:52px;font-weight:800;color:${pct>=80?'var(--ok)':pct>=50?'var(--warn)':'var(--err)'};font-family:'DM Mono',monospace;">${pct}%</div>
-        <div style="font-size:13px;color:var(--muted);">${done} livré${done>1?'s':''} sur ${total}</div>
-      </div>
-      <div style="background:var(--bg);border-radius:8px;height:10px;overflow:hidden;">
-        <div style="height:100%;background:linear-gradient(90deg,var(--ok),var(--blue-mid));border-radius:8px;width:${pct}%;transition:width .6s;"></div>
-      </div>
-    </div>
-    <div class="form-card">
-      <div class="section-title" style="margin-bottom:12px;">🚐 Détails tournée</div>
-      <div style="display:flex;flex-direction:column;gap:10px;">
-        ${totalDistKm?`<div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:13px;color:var(--muted);">📏 Distance totale</span><strong>${totalDistKm} km</strong></div>`:''}
-        ${totalTimeMin?`<div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:13px;color:var(--muted);">⏱️ Durée estimée</span><strong>${totalTimeMin} min</strong></div>`:''}
-        <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:13px;color:var(--muted);">⚡ Express</span><strong style="color:var(--err)">${express}</strong></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:13px;color:var(--muted);">🔵 Fragile</span><strong style="color:#7C3AED">${fragile}</strong></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:13px;color:var(--muted);">📞 Avec téléphone</span><strong>${stops.filter(s=>s.tel).length}</strong></div>
-      </div>
-    </div>`;
+let file=e.target.files[0]
+
+let reader=new FileReader()
+
+reader.onload=function(evt){
+
+stops[i].photo=evt.target.result
+
+save()
+
 }
 
-function renderStats() {
-  document.getElementById('statsInner').innerHTML = statsHTML();
-  document.getElementById('dStats').innerHTML = statsHTML();
+reader.readAsDataURL(file)
+
 }
 
-// ══════════════════════════════════════
-//  ÉDITION
-// ══════════════════════════════════════
-function openEdit(id) {
-  const s = stops.find(s=>s.id===id); if (!s) return;
-  editingId = id;
-  document.getElementById('editName').value = s.name;
-  document.getElementById('editAddr').value = s.addr;
-  document.getElementById('editTel').value = s.tel||'';
-  document.getElementById('editSlot').value = s.slot||'';
-  document.getElementById('editType').value = s.type||'standard';
-  document.getElementById('editNote').value = s.note||'';
-  openModal('editModal');
-  setTimeout(()=>document.getElementById('editName').focus(),300);
+function saveSignature(i){
+
+let data=stops[i].pad.toDataURL()
+
+stops[i].signature=data
+
+save()
+
+alert("signature enregistrée")
+
 }
 
-function saveEdit() {
-  if (!editingId) return;
-  const s = stops.find(s=>s.id===editingId); if (!s) return;
-  const newName = document.getElementById('editName').value.trim();
-  const newAddr = document.getElementById('editAddr').value.trim();
-  if (!newName||!newAddr) { showToast('⚠️ Nom et adresse requis','err'); return; }
-  const addrChanged = newAddr !== s.addr;
-  s.name = newName; s.addr = newAddr;
-  s.tel = document.getElementById('editTel').value.trim();
-  s.slot = document.getElementById('editSlot').value;
-  s.type = document.getElementById('editType').value;
-  s.note = document.getElementById('editNote').value.trim();
-  if (addrChanged) { s.coords=null; s.distFromPrev=undefined; s.timeFromPrev=undefined; showToast('✏️ Modifié — relancez l\'optimisation','info'); }
-  else showToast(`✅ ${s.name} mis à jour`,'ok');
-  closeModal('editModal');
-  renderAll(); refreshMarkers(); updateHeader(); saveToStorage();
+function nextStop(){
+
+let next=stops.find(s=>s.status==="pending")
+
+if(!next){
+
+alert("tournée terminée")
+
+return
+
 }
 
-// ══════════════════════════════════════
-//  PARTAGE QR CODE
-// ══════════════════════════════════════
-function shareRoute() {
-  if (!stops.length) { showToast('⚠️ Aucun arrêt à partager','err'); return; }
-  const data = stops.map(s=>({n:s.name,a:s.addr,t:s.tel||'',s:s.slot||'',y:s.type,o:s.note||''}));
-  const encoded = btoa(encodeURIComponent(JSON.stringify(data)));
-  const url = `${location.origin}${location.pathname}?t=${encoded}`;
-  document.getElementById('shareUrl').value = url;
-  // Générer QR code
-  const qrDiv = document.getElementById('qrcode');
-  qrDiv.innerHTML = '';
-  new QRCode(qrDiv, { text: url, width: 180, height: 180, colorDark:'#0F1B2D', colorLight:'#FFFFFF', correctLevel: QRCode.CorrectLevel.M });
-  openModal('qrModal');
+navigate(next.adresse)
+
 }
 
-function copyShareUrl() {
-  const url = document.getElementById('shareUrl').value;
-  navigator.clipboard.writeText(url).then(()=>showToast('🔗 Lien copié !','ok')).catch(()=>showToast('❌ Copie échouée','err'));
+function shareTour(){
+
+let data=btoa(JSON.stringify(stops))
+
+let url=location.origin+location.pathname+"?tour="+data
+
+navigator.clipboard.writeText(url)
+
+alert("lien copié")
+
 }
 
-function loadFromURL() {
-  const params = new URLSearchParams(location.search);
-  const t = params.get('t');
-  if (!t) return;
-  try {
-    const data = JSON.parse(decodeURIComponent(atob(t)));
-    stops = data.map(d=>({ id:Date.now()+Math.random(), name:d.n, addr:d.a, tel:d.t||'', slot:d.s||'', type:d.y||'standard', note:d.o||'', status:null, coords:null }));
-    renderAll(); updateHeader();
-    showToast(`🔗 Tournée importée — ${stops.length} arrêt${stops.length>1?'s':''}`, 'ok');
-    history.replaceState(null,'',location.pathname);
-  } catch(e) {}
-}
+render()
 
-// ══════════════════════════════════════
-//  STATUS / REMOVE
-// ══════════════════════════════════════
-function setStatus(id,st) {
-  const s=stops.find(s=>s.id===id); if(!s)return;
-  s.status=s.status===st?null:st;
-  renderAll(); refreshMarkers(); updateHeader(); updateProgress(); saveToStorage();
-}
-function removeStop(id) {
-  stops=stops.filter(s=>s.id!==id);
-  renderAll(); refreshMarkers(); updateHeader(); updateProgress(); saveToStorage();
-}
-
-// ══════════════════════════════════════
-//  EXPORT PDF
-// ══════════════════════════════════════
-function exportPDF() {
-  if (!stops.length) { showToast('⚠️ Aucune tournée','err'); return; }
-  const {jsPDF}=window.jspdf; const doc=new jsPDF();
-  const now=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
-  const done=stops.filter(s=>s.status==='livre').length, abs=stops.filter(s=>s.status==='absent').length, ech=stops.filter(s=>s.status==='echec').length;
-  doc.setFillColor(26,86,219); doc.rect(0,0,210,24,'F');
-  doc.setFillColor(255,209,0); doc.rect(0,0,5,24,'F');
-  doc.setFont('helvetica','bold'); doc.setFontSize(16); doc.setTextColor(255,255,255);
-  doc.text('ChronoRoute — Feuille de Tournée',14,15);
-  doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(180,200,240);
-  doc.text(`Générée le ${now}`,14,30);
-  doc.setTextColor(60,60,60); doc.setFontSize(9);
-  doc.text(`${stops.length} colis · ✅ ${done} · ⚠️ ${abs} · ❌ ${ech}${totalDistKm?` · 📏 ${totalDistKm} km`:''}`,14,38);
-  doc.setDrawColor(220,230,245); doc.line(10,42,200,42);
-  let y=50;
-  doc.setFillColor(26,86,219); doc.rect(10,y-6,190,9,'F');
-  doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(8);
-  doc.text('#',14,y); doc.text('DESTINATAIRE',22,y); doc.text('ADRESSE',65,y);
-  doc.text('TÉL',122,y); doc.text('CRÉNEAU',140,y); doc.text('STATUT',175,y); y+=8;
-  stops.forEach((s,i)=>{
-    if (y>265) { doc.addPage(); y=20; }
-    if (i%2===0) { doc.setFillColor(245,248,255); doc.rect(10,y-5,190,s.note?14:8,'F'); }
-    doc.setTextColor(15,27,45); doc.setFont('helvetica','normal'); doc.setFontSize(8);
-    doc.text(String(i+1),14,y); doc.text(s.name.substring(0,18),22,y);
-    doc.text(s.addr.substring(0,32),65,y); doc.text(s.tel||'—',122,y);
-    doc.text(s.slot||'—',140,y);
-    const [sr,sg,sb]=s.status==='livre'?[13,168,116]:s.status==='absent'?[245,158,11]:s.status==='echec'?[229,62,62]:[100,120,150];
-    doc.setTextColor(sr,sg,sb); doc.setFont('helvetica','bold');
-    doc.text(s.status==='livre'?'LIVRÉ':s.status==='absent'?'ABSENT':s.status==='echec'?'ÉCHEC':'EN ATTENTE',175,y);
-    if (s.note) { doc.setTextColor(124,58,237); doc.setFont('helvetica','italic'); doc.setFontSize(7); doc.text(`📝 ${s.note.substring(0,60)}`,22,y+6); y+=7; }
-    y+=9;
-  });
-  doc.setTextColor(150,160,180); doc.setFont('helvetica','normal'); doc.setFontSize(7);
-  doc.text('ChronoRoute v6 — OpenStreetMap · OSRM · jsPDF',14,y+10);
-  doc.save(`tournee_${new Date().toISOString().slice(0,10)}.pdf`);
-  showToast('📄 PDF exporté !','ok');
-}
-
-// ══════════════════════════════════════
-//  NAVIGATION MOBILE / DESKTOP
-// ══════════════════════════════════════
-const views = ['map','list','add','route','stats'];
-function showView(name) {
-  views.forEach(v=>{
-    document.getElementById(`view-${v}`).classList.toggle('active',v===name);
-    const b=document.getElementById(`bn-${v}`); if(b) b.classList.toggle('active',v===name);
-  });
-  if (name==='map'&&map) setTimeout(()=>map.invalidateSize(),60);
-}
-function switchDesktopTab(tab) {
-  ['map','route','stats'].forEach(t=>{
-    document.getElementById('dtab'+t.charAt(0).toUpperCase()+t.slice(1)).classList.toggle('active',t===tab);
-  });
-  document.getElementById('dMap').classList.toggle('hidden',tab!=='map');
-  document.getElementById('dRoute').classList.toggle('hidden',tab!=='route');
-  document.getElementById('dStats').classList.toggle('hidden',tab!=='stats');
-  if (tab==='map'&&dmap) setTimeout(()=>dmap.invalidateSize(),60);
-}
-
-// ══════════════════════════════════════
-//  MODALES
-// ══════════════════════════════════════
-function openModal(id) { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); if(id==='editModal') editingId=null; }
-function overlayClose(e,id) { if(e.target===document.getElementById(id)) closeModal(id); }
-
-// ══════════════════════════════════════
-//  HELPERS
-// ══════════════════════════════════════
-function updateHeader() {
-  document.getElementById('hTotal').textContent=`📦 ${stops.length}`;
-  document.getElementById('hDone').textContent=`✅ ${stops.filter(s=>s.status==='livre').length}`;
-}
-function updateProgress() {
-  const t=stops.length,d=stops.filter(s=>s.status==='livre').length;
-  document.getElementById('progFill').style.width=t?(d/t*100)+'%':'0%';
-}
-function setBtnsDisabled(v) {
-  document.getElementById('btnOpt').disabled=v;
-  document.getElementById('dBtnOpt').disabled=v;
-}
-function resetAll() {
-  if (!stops.length) return;
-  if (!confirm('Réinitialiser toute la tournée ?')) return;
-  stops=[]; totalDistKm=0; totalTimeMin=0;
-  markers.forEach(m=>m.remove()); markers=[];
-  dmarkers.forEach(m=>m.remove()); dmarkers=[];
-  if (routeLine){routeLine.remove();routeLine=null;}
-  if (drouteLine){drouteLine.remove();drouteLine=null;}
-  localStorage.removeItem(SAVE_KEY);
-  renderAll(); updateHeader(); updateProgress();
-  showToast('🗑️ Réinitialisé','info');
-}
-function showLoading(t,s){document.getElementById('loadT').textContent=t;document.getElementById('loadS').textContent=s;document.getElementById('loading').classList.remove('hidden');}
-function updT(t){document.getElementById('loadT').textContent=t;}
-function updS(s){document.getElementById('loadS').textContent=s;}
-function hideLoading(){document.getElementById('loading').classList.add('hidden');}
-function showToast(msg,type='info'){
-  const t=document.getElementById('toast');
-  t.textContent=msg; t.className=`toast ${type} show`;
-  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),3000);
-}
-function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
-
-// ══════════════════════════════════════
-//  INIT
-// ══════════════════════════════════════
-window.addEventListener('load',()=>{
-  initMaps();
-  loadFromURL();
-  loadFromStorage();
-  setTimeout(()=>{ map.invalidateSize(); dmap.invalidateSize(); },200);
-});
 </script>
 
 </body>
